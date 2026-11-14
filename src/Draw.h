@@ -29,6 +29,12 @@
 #define __DRAW_H__
 
 #ifdef _WIN32
+  // Only the basic Windows API is needed (for OpenGL). Leaving out the
+  // RPC/COM headers avoids their 'byte' type clashing with C++17 std::byte
+  // when 'using namespace std' is active.
+  #ifndef WIN32_LEAN_AND_MEAN
+    #define WIN32_LEAN_AND_MEAN
+  #endif
   #include <windows.h>
 #endif
 
