@@ -62,16 +62,60 @@ To make a self contained application bundle use QT's macdeployqt tool (included 
 
 # Build instructions for Windows
 
-To compile in Windows install the Open Source version of Qt and CMake.
-When installing Qt select the option to download and install the MinGW compiler. Open the Qt Command Prompt and change to the "PianoBooster" source code directory and then create a `build` directory and then from that directory type:
+The recommended way to build on Windows is with [MSYS2](https://www.msys2.org), which
+provides the compiler, Qt, FluidSynth and FTGL as ready-made 64-bit packages
+built with the same toolchain.
 
-`cmake.exe -G "MinGW Makefiles" ..`
+Install MSYS2 (default location `C:\msys64`) and open the **MSYS2 UCRT64** shell.
+All the commands below must be run from that shell. First update MSYS2, repeating
+the command (and reopening the shell if asked) until there is nothing left to update:
 
-Once this is completed type:
+```
+pacman -Syu
+```
 
-`make`
+Then install the build dependencies:
 
-Or alternatively you can install QtCreator and then open the `CMakeLists.txt`.
+```
+pacman -S --needed mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake \
+    mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-pkgconf \
+    mingw-w64-ucrt-x86_64-qt6-base mingw-w64-ucrt-x86_64-qt6-tools \
+    mingw-w64-ucrt-x86_64-qt6-5compat mingw-w64-ucrt-x86_64-ftgl \
+    mingw-w64-ucrt-x86_64-fluidsynth
+```
+
+From the PianoBooster source directory (MSYS2 writes `C:\` as `/c/`), configure and build:
+
+```
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DQT_PACKAGE_NAME=Qt6
+cmake --build build
+```
+
+The executable is created as `build/build/pianobooster.exe`. Run it from the same
+shell, which makes the MSYS2 DLLs available:
+
+```
+./build/build/pianobooster.exe
+```
+
+To use the internal FluidSynth sound generator, download a General MIDI SoundFont
+(`.sf2`, e.g. GeneralUser GS or FluidR3_GM) and load it in the MIDI setup dialog.
+
+To create a portable zip that runs without MSYS2 (the executable, its data files,
+Qt and every other required DLL), run after building:
+
+```
+tools/package-windows.sh
+```
+
+The result is `build/package/PianoBooster-<version>-win64.zip`.
+
+QtCreator can also be used: add a kit with the Qt version `C:\msys64\ucrt64\bin\qmake6.exe`,
+the compilers and the CMake from `C:\msys64\ucrt64\bin`, open the top-level `CMakeLists.txt`
+and add `-DQT_PACKAGE_NAME=Qt6` to the CMake configuration.
+
+Note: if "Smart App Control" is enabled in Windows 11 it may block unsigned compilers
+and tools such as those of MSYS2 or MinGW, causing errors like "cannot execute cc1.exe".
 
 # Build options
 
