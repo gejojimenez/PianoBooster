@@ -600,8 +600,10 @@ ctx->versionFunctions<QOpenGLFunctions_1_1>();
             funcs->glEnable(GL_SCISSOR_TEST);
         }
         funcs->glViewport(0, 0, static_cast<GLsizei>(width * dpr), static_cast<GLsizei>(height * dpr));
-        gl1funcs->glAlphaFunc(GL_GREATER, 0.0);
-        funcs->glEnable(GL_ALPHA_TEST);
+        // Note: unlike the original Qt 5 code, GL_ALPHA_TEST is not enabled here.
+        // QPainter draws with shaders and blending of its own, and with the legacy
+        // alpha test enabled Qt's glyph cache gets corrupted when it grows (e.g.
+        // when a message with new characters is shown), garbling the text.
         if (use_depth_testing)
             funcs->glEnable(GL_DEPTH_TEST);
 
