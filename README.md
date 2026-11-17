@@ -37,6 +37,16 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
 * **1.0.5**
   * The bar numbers are shown in the score, and bars are numbered from 1 everywhere,
     like in printed music.
+* **1.1.0 – Song library**
+  * A library window (File/Library..., `Ctrl+B`) with favourite songs, recently opened
+    songs and the MIDI files in your own folders, with search and the duration, bars,
+    time signature and statistics of each song. It is kept in a small SQLite database,
+    and songs keep their data if they are moved or renamed.
+  * The side panel shows the current song and its information (time signature, key,
+    tempo, duration, bars) instead of the book and song lists.
+  * To use the Booster Music course included with PianoBooster on Windows, unzip
+    `BoosterMusicBooks.zip` (next to `pianobooster.exe`) anywhere and add the
+    `BoosterMusicBooks4` folder to the library.
 
 ## Building
 
@@ -49,7 +59,8 @@ cmake --build build
 tools/package-windows.sh   # optional: portable zip in build/package/
 ```
 
-The Linux and macOS instructions are unchanged from the original project.
+The Linux and macOS instructions are those of the original project, plus the Qt SQLite
+driver needed by the song library (see BUILD.md).
 
 ## License
 

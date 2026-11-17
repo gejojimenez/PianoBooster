@@ -1,9 +1,10 @@
 1.1.0 (17 Nov 2026)
 - New song library (File/Library..., Ctrl+B, or the Library button in the side panel):
   - Favourite songs, recently opened songs and the MIDI files in your own folders
-    ("locations"), with a search box. The Booster Music course is the first location.
-  - Shows the duration, number of bars and time signature of the songs already opened,
-    when they were last opened and how many times.
+    ("locations"), with a search box. The Booster Music course is the first location
+    when it has been unzipped (on Windows, unzip BoosterMusicBooks.zip and add it).
+  - Shows the duration, number of bars and time signature of each song, when it was
+    last opened and how many times.
   - Kept in a database (library.db) next to the settings. Songs are recognised by their
     contents, so a moved or renamed song keeps its data.
 - The side panel shows the current song (name, folder, time signature, key, tempo,
