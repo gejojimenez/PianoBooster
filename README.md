@@ -53,6 +53,14 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
     arrow in the top bar) together with the end of the repeated section; the button shows
     a summary such as "bar 12 → bar 14 ↻". The top bar is much narrower, so the window
     fits on smaller screens.
+* **1.2.0 – Sections**
+  * Each song can have named sections (e.g. "Intro", "Bars 12-16") to practise them on
+    their own: choose one in the "Section" list of the side panel and it is played from
+    its start to its end, repeating.
+  * Set the start and end in "Start and Repeat" and press "+" to save them as a section;
+    sections can also be updated, renamed and deleted. They are kept in the library
+    database, so a moved or renamed song keeps them.
+  * The side panel scrolls when it does not fit on the screen.
 
 ## Building
 
