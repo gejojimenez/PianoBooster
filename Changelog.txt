@@ -1,3 +1,18 @@
+1.2.0 (17 Nov 2026)
+- Named sections of a song, to practise them on their own (e.g. "Intro", "Bars 12-16"):
+  - Choose one in the new "Section" list of the side panel: it is played from its start
+    to its end, repeating. "Whole song" goes back to playing all of it.
+  - "+" saves the current start and end (set in "Start / Repeat") as a new section; the
+    other buttons update the selected section with the current start and end, rename it
+    or delete it.
+  - Sections are kept in the library database and belong to the song, so they are kept
+    if the song is moved or renamed. The library shows how many sections each song has.
+  - They are called sections, not parts, because "Parts" already means the tracks
+    (instruments) of the MIDI file.
+- The side panel scrolls when it is taller than the screen, instead of making the window
+  taller than the screen (which kept it from being maximized properly).
+- The summary on the "Start / Repeat" button is shortened when it is too long.
+
 1.1.1 (17 Nov 2026)
 - The window opens maximized. Its size when it is not maximized is still saved,
   and used when it is restored down.

@@ -53,6 +53,8 @@ public:
     void setSpeed(int value){ speedSpin->setValue(value); }
     int getSpeed(){return speedSpin->value();}
     void stopMuiscPlaying();
+    // shows the start and the repeated section on the button that opens their popup
+    void updateSectionSummary();
     void updateTranslate();
 
 public slots:
@@ -73,7 +75,6 @@ private slots:
     void on_loopingBarsPopupButton_clicked(bool clicked);
 
 private:
-    void updateSectionSummary();
     bool eventFilter(QObject *obj, QEvent *event);
     void reloadKeyCombo(bool major);
 

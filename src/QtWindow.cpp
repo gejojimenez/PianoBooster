@@ -104,13 +104,24 @@ QtWindow::QtWindow()
 
     m_sidePanel = new GuiSidePanel(this, m_settings);
     connect(m_sidePanel, &GuiSidePanel::libraryRequested, this, &QtWindow::openLibrary);
+    m_sidePanel->setLibrary(m_library);
     m_topBar = new GuiTopBar(this, m_settings);
     m_tutorWindow = new QTextBrowser(this);
     m_tutorWindow->hide();
 
     m_settings->init(m_song, m_sidePanel, m_topBar);
 
-    mainLayout->addWidget(m_sidePanel);
+    // The side panel can be taller than small screens: then it scrolls, instead of
+    // making the window taller than the screen, which spoils maximizing it.
+    m_sidePanelScroll = new QScrollArea;
+    m_sidePanelScroll->setWidget(m_sidePanel);
+    m_sidePanelScroll->setWidgetResizable(true);
+    m_sidePanelScroll->setFrameShape(QFrame::NoFrame);
+    m_sidePanelScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_sidePanelScroll->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_sidePanelScroll->setFixedWidth(m_sidePanel->maximumWidth() +
+                                     m_sidePanelScroll->verticalScrollBar()->sizeHint().width());
+    mainLayout->addWidget(m_sidePanelScroll);
     columnLayout->addWidget(m_topBar);
     columnLayout->addWidget(m_glWidget);
     columnLayout->addWidget(m_tutorWindow);
@@ -698,6 +709,7 @@ void QtWindow::songLoaded(const QString &fileName)
     const CMidiInfo info = CMidiInfo::read(fileName);
     m_library->songOpened(fileName, info);
     m_sidePanel->setSongInfo(m_song->getSongTitle(), fileName, info);
+    m_sidePanel->loadParts(); // the song starts from the beginning, with no part selected
     setWindowTitle(QStringLiteral("Piano Booster " PB_VERSION " - ") + m_song->getSongTitle());
 }
 

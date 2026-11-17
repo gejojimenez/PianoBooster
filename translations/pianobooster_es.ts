@@ -1165,6 +1165,23 @@
 </context>
 <context>
     <name>GuiSidePanel</name>
+    <message><source>Section:</source><translation>Fragmento:</translation></message>
+    <message><source>Practise a section of the song: it is played from its start to its end, repeating</source><translation>Practicar un fragmento de la canción: se toca desde su inicio hasta su final, repitiéndose</translation></message>
+    <message><source>Save the current start and end (Start / Repeat) as a new section</source><translation>Guardar el inicio y el final actuales (Inicio / Repetición) como un fragmento nuevo</translation></message>
+    <message><source>Replace the start and end of the selected section with the current ones</source><translation>Sustituir el inicio y el final del fragmento seleccionado por los actuales</translation></message>
+    <message><source>Rename the selected section</source><translation>Renombrar el fragmento seleccionado</translation></message>
+    <message><source>Delete the selected section</source><translation>Borrar el fragmento seleccionado</translation></message>
+    <message><source>Whole song</source><translation>Canción completa</translation></message>
+    <message><source>Save a Section</source><translation>Guardar un fragmento</translation></message>
+    <message><source>First set the start and the end of the section in "Start / Repeat" (the button with the arrow in the top bar), with "Repeat up to the end bar" ticked.</source><translation>Primero define el inicio y el final del fragmento en «Inicio / Repetición» (el botón con la flecha de la barra superior), con «Repetir hasta el compás final» marcado.</translation></message>
+    <message><source>New Section</source><translation>Nuevo fragmento</translation></message>
+    <message><source>Name of the section:</source><translation>Nombre del fragmento:</translation></message>
+    <message><source>Section %1</source><translation>Fragmento %1</translation></message>
+    <message><source>Update Section</source><translation>Actualizar fragmento</translation></message>
+    <message><source>Replace the start and end of "%1" with the current ones?</source><translation>¿Sustituir el inicio y el final de «%1» por los actuales?</translation></message>
+    <message><source>Rename Section</source><translation>Renombrar fragmento</translation></message>
+    <message><source>Delete Section</source><translation>Borrar fragmento</translation></message>
+    <message><source>Delete the section "%1"?</source><translation>¿Borrar el fragmento «%1»?</translation></message>
     <message><source>Library...</source><translation>Biblioteca...</translation></message>
     <message><source>Choose a song from the library: favourites, recent songs and your folders</source><translation>Elegir una canción de la biblioteca: favoritas, recientes y tus carpetas</translation></message>
     <message><source>No song</source><translation>Ninguna canción</translation></message>
@@ -2023,6 +2040,7 @@
 </context>
 <context>
     <name>GuiLibraryDialog</name>
+    <message><source>Sections</source><translation>Fragmentos</translation></message>
     <message><source>Library</source><translation>Biblioteca</translation></message>
     <message><source>Add Location...</source><translation>Añadir ubicación...</translation></message>
     <message><source>Add a folder with MIDI files to the library</source><translation>Añadir a la biblioteca una carpeta con archivos MIDI</translation></message>

@@ -36,6 +36,7 @@
 #include "TrackList.h"
 #include "Settings.h"
 #include "MidiInfo.h"
+#include "Library.h"
 
 #include "ui_GuiSidePanel.h"
 
@@ -63,6 +64,18 @@ public:
 
     // shows the song name, its folder and its MIDI information in the header
     void setSongInfo(const QString &title, const QString &fileName, const CMidiInfo &info);
+
+    // the library where the named parts of the songs are kept
+    void setLibrary(CLibrary *library) { m_library = library; }
+    // reads the parts of the current song and selects selectId (or the whole song)
+    void loadParts(qint64 selectId = -1);
+
+private slots:
+    void partSelected(int index);
+    void addPart();
+    void updatePart();
+    void renamePart();
+    void deletePart();
 
 signals:
     void libraryRequested();
@@ -202,6 +215,19 @@ private:
     QString m_songTitle;        // the song shown in the header
     QString m_songFileName;
     CMidiInfo m_songInfo;
+
+    void setPartTexts();
+    void updatePartButtons();
+    const CSongPart *selectedPart() const;
+    bool hasSectionForPart();
+    CLibrary* m_library = nullptr;
+    QVector<CSongPart> m_parts;
+    QLabel* m_partLabel;
+    QComboBox* m_partCombo;
+    QToolButton* m_addPartButton;
+    QToolButton* m_updatePartButton;
+    QToolButton* m_renamePartButton;
+    QToolButton* m_deletePartButton;
     QWidget *m_parent;
 };
 

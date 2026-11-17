@@ -32,6 +32,7 @@
 #include <QVector>
 
 #include "MidiInfo.h"
+#include "Bar.h"
 
 // What the library knows about a song
 struct CLibrarySong
@@ -42,6 +43,16 @@ struct CLibrarySong
     QDateTime lastOpened;   // invalid if never opened
     int timesOpened = 0;
     CMidiInfo info;         // info.valid is false if not known yet
+    int partCount = 0;      // number of named parts
+};
+
+// A named part of a song, to practise it on its own: played from start to end (included)
+struct CSongPart
+{
+    qint64 id = -1;
+    QString name;
+    CBarPosition start;
+    CBarPosition end;
 };
 
 class CLibrary
@@ -66,6 +77,13 @@ public:
     // Stores the MIDI information of a song, without counting it as opened.
     void storeInfo(const QString &path, const CMidiInfo &info);
 
+    // The named parts of a song, in the order they were created. They belong to the song,
+    // not to its path, so they are kept if the song is moved or renamed.
+    QVector<CSongPart> parts(const QString &songPath) const;
+    qint64 addPart(const QString &songPath, const QString &name, const CBarPosition &start, const CBarPosition &end);
+    void updatePart(const CSongPart &part);
+    void deletePart(qint64 id);
+
     // Groups many changes in one transaction, which is much faster.
     void beginBatch();
     void endBatch();
@@ -82,6 +100,7 @@ public:
 
 private:
     bool exec(const QString &sql);
+    qint64 songId(const QString &path, bool create) const;
     QVector<CLibrarySong> query(const QString &where, const QVariantList &values = {}, const QString &tail = QString()) const;
 
     QString m_connection;

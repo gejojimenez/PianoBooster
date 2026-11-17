@@ -291,8 +291,10 @@ void GuiTopBar::updateSectionSummary()
         else if (!start.isSongStart())
             text = tr("From %1").arg(startText);
     }
-    loopingBarsPopupButton->setText(text);
-    loopingBarsPopupButton->setToolTip(tr("Start position and repeated section"));
+    // a long summary would make the top bar wider than the screen, so shorten it
+    const int maxTextWidth = loopingBarsPopupButton->fontMetrics().averageCharWidth() * 28;
+    loopingBarsPopupButton->setText(loopingBarsPopupButton->fontMetrics().elidedText(text, Qt::ElideRight, maxTextWidth));
+    loopingBarsPopupButton->setToolTip(tr("Start position and repeated section") + "\n" + text);
 }
 
 bool GuiTopBar::eventFilter(QObject *obj, QEvent *event)

@@ -117,7 +117,7 @@ private slots:
 
     void toggleSidePanel()
     {
-        m_sidePanel->setVisible(m_sidePanelStateAct->isChecked());
+        m_sidePanelScroll->setVisible(m_sidePanelStateAct->isChecked());
     }
 
     void onViewPianoKeyboard(){
@@ -202,6 +202,7 @@ private:
     QRect m_normalGeometry; // the window size and position when not maximized
 
     GuiSidePanel *m_sidePanel;
+    QScrollArea *m_sidePanelScroll; // so that a tall side panel does not make the window taller than the screen
     GuiTopBar *m_topBar;
     QTextBrowser *m_tutorWindow;
 

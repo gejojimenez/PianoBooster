@@ -33,7 +33,7 @@ const int SORT_ROLE = Qt::UserRole + 2;
 
 const int MAX_SONGS_LISTED = 5000;
 
-enum SongColumn { COL_FAVOURITE, COL_NAME, COL_FOLDER, COL_DURATION, COL_BARS, COL_TIME_SIG, COL_LAST_OPENED, COL_TIMES_OPENED, COL_COUNT };
+enum SongColumn { COL_FAVOURITE, COL_NAME, COL_FOLDER, COL_DURATION, COL_BARS, COL_TIME_SIG, COL_PARTS, COL_LAST_OPENED, COL_TIMES_OPENED, COL_COUNT };
 
 const QString STAR = QString::fromUtf8("★");       // ★
 const QString EMPTY_STAR = QString::fromUtf8("☆"); // ☆
@@ -96,7 +96,7 @@ GuiLibraryDialog::GuiLibraryDialog(CLibrary *library, const QString &currentSong
     m_songs->setSortingEnabled(true);
     m_songs->setColumnCount(COL_COUNT);
     m_songs->setHeaderLabels({ STAR, tr("Name"), tr("Folder"), tr("Duration"), tr("Bars"),
-                               tr("Time Sig."), tr("Last Opened"), tr("Times") });
+                               tr("Time Sig."), tr("Sections"), tr("Last Opened"), tr("Times") });
     m_songs->headerItem()->setToolTip(COL_FAVOURITE, tr("Favourite (click a star to change it)"));
     m_songs->header()->setStretchLastSection(false);
     m_songs->header()->setSectionResizeMode(COL_NAME, QHeaderView::Stretch);
@@ -294,9 +294,11 @@ void GuiLibraryDialog::showSongs(const QVector<CLibrarySong> &songs, const QStri
         }
         else
             item->setData(COL_LAST_OPENED, SORT_ROLE, QDateTime::fromSecsSinceEpoch(0));
+        item->setText(COL_PARTS, song.partCount > 0 ? QString::number(song.partCount) : QString());
+        item->setData(COL_PARTS, SORT_ROLE, song.partCount);
         item->setText(COL_TIMES_OPENED, song.timesOpened > 0 ? QString::number(song.timesOpened) : QString());
         item->setData(COL_TIMES_OPENED, SORT_ROLE, song.timesOpened);
-        for (int column : { COL_DURATION, COL_BARS, COL_TIMES_OPENED })
+        for (int column : { COL_DURATION, COL_BARS, COL_PARTS, COL_TIMES_OPENED })
             item->setTextAlignment(column, Qt::AlignRight | Qt::AlignVCenter);
 
         if (song.path == m_currentSong)
@@ -315,7 +317,7 @@ void GuiLibraryDialog::showSongs(const QVector<CLibrarySong> &songs, const QStri
         m_songs->sortByColumn(COL_LAST_OPENED, Qt::DescendingOrder);
     else
         m_songs->sortByColumn(COL_NAME, Qt::AscendingOrder);
-    for (int column : { COL_DURATION, COL_BARS, COL_TIME_SIG, COL_LAST_OPENED, COL_TIMES_OPENED })
+    for (int column : { COL_DURATION, COL_BARS, COL_TIME_SIG, COL_PARTS, COL_LAST_OPENED, COL_TIMES_OPENED })
         m_songs->resizeColumnToContents(column);
 
     if (current)

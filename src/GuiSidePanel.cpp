@@ -62,12 +62,49 @@ GuiSidePanel::GuiSidePanel(QWidget *parent, CSettings* settings)
     m_libraryButton->setToolTip(tr("Choose a song from the library: favourites, recent songs and your folders"));
     connect(m_libraryButton, &QPushButton::clicked, this, &GuiSidePanel::libraryRequested);
 
+    // the named parts of the song
+    m_partLabel = new QLabel(tr("Section:"));
+    m_partCombo = new QComboBox;
+    m_partCombo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    m_partCombo->setMinimumContentsLength(10);
+    m_partCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_addPartButton = new QToolButton;
+    m_addPartButton->setText("+");
+    m_updatePartButton = new QToolButton;
+    m_updatePartButton->setIcon(style()->standardIcon(QStyle::SP_DialogSaveButton));
+    m_renamePartButton = new QToolButton;
+    m_renamePartButton->setText(QString::fromUtf8("✎"));
+    m_deletePartButton = new QToolButton;
+    m_deletePartButton->setIcon(style()->standardIcon(QStyle::SP_TrashIcon));
+    connect(m_partCombo, QOverload<int>::of(&QComboBox::activated), this, &GuiSidePanel::partSelected);
+    connect(m_addPartButton, &QToolButton::clicked, this, &GuiSidePanel::addPart);
+    connect(m_updatePartButton, &QToolButton::clicked, this, &GuiSidePanel::updatePart);
+    connect(m_renamePartButton, &QToolButton::clicked, this, &GuiSidePanel::renamePart);
+    connect(m_deletePartButton, &QToolButton::clicked, this, &GuiSidePanel::deletePart);
+    // the list on one row and its buttons below, so that the list is wide enough for the names
+    auto *partListLayout = new QHBoxLayout;
+    partListLayout->addWidget(m_partLabel);
+    partListLayout->addWidget(m_partCombo, 1);
+    auto *partButtonLayout = new QHBoxLayout;
+    partButtonLayout->addStretch(1);
+    for (QToolButton *button : { m_addPartButton, m_updatePartButton, m_renamePartButton, m_deletePartButton })
+    {
+        button->setAutoRaise(true);
+        partButtonLayout->addWidget(button);
+    }
+    auto *partLayout = new QVBoxLayout;
+    partLayout->setSpacing(0);
+    partLayout->addLayout(partListLayout);
+    partLayout->addLayout(partButtonLayout);
+    setPartTexts();
+
     auto *headerLayout = new QVBoxLayout;
     headerLayout->setContentsMargins(0, 0, 0, 4);
     headerLayout->addWidget(m_songTitleLabel);
     headerLayout->addWidget(m_songFolderLabel);
     headerLayout->addWidget(m_songInfoLabel);
     headerLayout->addWidget(m_libraryButton);
+    headerLayout->addLayout(partLayout);
     if (auto *mainLayout = qobject_cast<QBoxLayout*>(layout()))
         mainLayout->insertLayout(0, headerLayout);
 
@@ -97,6 +134,148 @@ void GuiSidePanel::setSongInfo(const QString &title, const QString &fileName, co
     first << info.tempoText();
     const QString second = info.durationText() + QString::fromUtf8(" · ") + tr("%n bar(s)", nullptr, info.bars);
     m_songInfoLabel->setText(first.join(QString::fromUtf8(" · ")) + "\n" + second);
+}
+
+void GuiSidePanel::setPartTexts()
+{
+    m_partLabel->setText(tr("Section:"));
+    m_partCombo->setToolTip(tr("Practise a section of the song: it is played from its start to its end, repeating"));
+    m_addPartButton->setToolTip(tr("Save the current start and end (Start / Repeat) as a new section"));
+    m_updatePartButton->setToolTip(tr("Replace the start and end of the selected section with the current ones"));
+    m_renamePartButton->setToolTip(tr("Rename the selected section"));
+    m_deletePartButton->setToolTip(tr("Delete the selected section"));
+    if (m_partCombo->count() > 0)
+        m_partCombo->setItemText(0, tr("Whole song"));
+}
+
+// Reads the parts of the current song from the library
+void GuiSidePanel::loadParts(qint64 selectId)
+{
+
+    m_parts = (m_library && !m_songFileName.isEmpty()) ? m_library->parts(m_songFileName) : QVector<CSongPart>();
+
+    const QSignalBlocker block(m_partCombo);
+    m_partCombo->clear();
+    m_partCombo->addItem(tr("Whole song"), -1);
+    for (const CSongPart &part : m_parts)
+    {
+        m_partCombo->addItem(part.name, part.id);
+        if (part.id == selectId)
+            m_partCombo->setCurrentIndex(m_partCombo->count() - 1);
+    }
+    updatePartButtons();
+}
+
+void GuiSidePanel::updatePartButtons()
+{
+    const bool hasSong = m_library && !m_songFileName.isEmpty();
+    const bool partSelected = m_partCombo->currentIndex() > 0;
+    m_partCombo->setEnabled(hasSong);
+    m_addPartButton->setEnabled(hasSong);
+    m_updatePartButton->setEnabled(partSelected);
+    m_renamePartButton->setEnabled(partSelected);
+    m_deletePartButton->setEnabled(partSelected);
+}
+
+const CSongPart *GuiSidePanel::selectedPart() const
+{
+    const qint64 id = m_partCombo->currentData().toLongLong();
+    for (const CSongPart &part : m_parts)
+        if (part.id == id)
+            return &part;
+    return nullptr;
+}
+
+// Plays the selected part, or the whole song, from now on
+void GuiSidePanel::partSelected(int index)
+{
+    Q_UNUSED(index)
+    if (!m_song)
+        return;
+    if (m_topBar)
+        m_topBar->stopMuiscPlaying();
+
+    if (const CSongPart *part = selectedPart())
+    {
+        m_song->setPlayFrom(part->start);
+        m_song->setLoop(true, part->end);
+    }
+    else
+    {
+        m_song->setPlayFrom(CBarPosition());
+        m_song->setLoop(false, m_song->getPlayUpto());
+    }
+    if (m_topBar)
+        m_topBar->updateSectionSummary();
+    updatePartButtons();
+}
+
+// Checks that there is a start and an end to save as a part
+bool GuiSidePanel::hasSectionForPart()
+{
+    if (m_song && m_song->isLoopActive())
+        return true;
+    QMessageBox::information(this, tr("Save a Section"),
+        tr("First set the start and the end of the section in \"Start / Repeat\" (the button with the arrow "
+           "in the top bar), with \"Repeat up to the end bar\" ticked."));
+    return false;
+}
+
+void GuiSidePanel::addPart()
+{
+    if (!m_library || !hasSectionForPart())
+        return;
+    bool ok = false;
+    const QString name = QInputDialog::getText(this, tr("New Section"), tr("Name of the section:"), QLineEdit::Normal,
+                                               tr("Section %1").arg(m_parts.size() + 1), &ok).trimmed();
+    if (!ok || name.isEmpty())
+        return;
+    const qint64 id = m_library->addPart(m_songFileName, name, m_song->getPlayFrom(), m_song->getPlayUpto());
+    loadParts(id);
+}
+
+void GuiSidePanel::updatePart()
+{
+    const CSongPart *selected = selectedPart();
+    if (!m_library || !selected || !hasSectionForPart())
+        return;
+    if (QMessageBox::question(this, tr("Update Section"),
+            tr("Replace the start and end of \"%1\" with the current ones?").arg(selected->name)) != QMessageBox::Yes)
+        return;
+    CSongPart part = *selected;
+    part.start = m_song->getPlayFrom();
+    part.end = m_song->getPlayUpto();
+    m_library->updatePart(part);
+    loadParts(part.id);
+}
+
+void GuiSidePanel::renamePart()
+{
+    const CSongPart *selected = selectedPart();
+    if (!m_library || !selected)
+        return;
+    bool ok = false;
+    const QString name = QInputDialog::getText(this, tr("Rename Section"), tr("Name of the section:"), QLineEdit::Normal,
+                                               selected->name, &ok).trimmed();
+    if (!ok || name.isEmpty())
+        return;
+    CSongPart part = *selected;
+    part.name = name;
+    m_library->updatePart(part);
+    loadParts(part.id);
+}
+
+void GuiSidePanel::deletePart()
+{
+    const CSongPart *selected = selectedPart();
+    if (!m_library || !selected)
+        return;
+    if (QMessageBox::question(this, tr("Delete Section"),
+            tr("Delete the section \"%1\"?").arg(selected->name)) != QMessageBox::Yes)
+        return;
+    m_library->deletePart(selected->id);
+    loadParts();
+    partSelected(0); // back to the whole song
 }
 
 void GuiSidePanel::init(CSong* songObj, CTrackList* trackList, GuiTopBar* topBar)
@@ -328,6 +507,7 @@ void GuiSidePanel::updateTranslate(){
     retranslateUi(this);
 
     // the song header, which is not in the .ui file
+    setPartTexts();
     m_libraryButton->setText(tr("Library..."));
     m_libraryButton->setToolTip(tr("Choose a song from the library: favourites, recent songs and your folders"));
     setSongInfo(m_songTitle, m_songFileName, m_songInfo); // its tooltips were reset above

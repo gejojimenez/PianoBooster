@@ -37,7 +37,8 @@
 namespace {
     const char *SONG_COLUMNS =
         "path, hash, favourite, last_opened, times_opened, title, time_sig_top, time_sig_bottom, "
-        "time_sig_changes, key_sharps, key_minor, tempo_bpm, tempo_changes, duration_ms, bars";
+        "time_sig_changes, key_sharps, key_minor, tempo_bpm, tempo_changes, duration_ms, bars, "
+        "(SELECT COUNT(*) FROM parts WHERE parts.song_id = songs.id)";
 }
 
 CLibrary::CLibrary(const QString &folder)
@@ -62,7 +63,13 @@ CLibrary::CLibrary(const QString &folder)
                   "key_sharps INTEGER, key_minor INTEGER, tempo_bpm REAL, tempo_changes INTEGER, "
                   "duration_ms INTEGER, bars INTEGER, info_valid INTEGER NOT NULL DEFAULT 0)") &&
              exec("CREATE INDEX IF NOT EXISTS songs_hash ON songs(hash)") &&
-             exec("PRAGMA user_version = 1");
+             exec("CREATE TABLE IF NOT EXISTS parts ("
+                  "id INTEGER PRIMARY KEY, song_id INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE, "
+                  "name TEXT NOT NULL, start_bar INTEGER, start_beat INTEGER, start_ticks INTEGER, "
+                  "end_bar INTEGER, end_beat INTEGER, end_ticks INTEGER)") &&
+             exec("CREATE INDEX IF NOT EXISTS parts_song ON parts(song_id)") &&
+             exec("PRAGMA foreign_keys = ON") &&
+             exec("PRAGMA user_version = 2");
 }
 
 CLibrary::~CLibrary()
@@ -269,6 +276,7 @@ QVector<CLibrarySong> CLibrary::query(const QString &where, const QVariantList &
         song.info.tempoChanges = q.value(c++).toInt() != 0;
         song.info.durationMs = q.value(c++).toLongLong();
         song.info.bars = q.value(c++).toInt();
+        song.partCount = q.value(c++).toInt();
         song.info.valid = q.value(c++).toInt() != 0;
         result << song;
     }
@@ -316,4 +324,84 @@ QVector<CLibrarySong> CLibrary::favourites() const
 QVector<CLibrarySong> CLibrary::recent(int maximum) const
 {
     return query("WHERE last_opened IS NOT NULL", {}, QString("ORDER BY last_opened DESC LIMIT %1").arg(maximum));
+}
+
+qint64 CLibrary::songId(const QString &songPath, bool create) const
+{
+    const QString path = normalisePath(songPath);
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    if (create)
+    {
+        q.prepare("INSERT OR IGNORE INTO songs (path, hash) VALUES (?, ?)");
+        q.addBindValue(path);
+        q.addBindValue(fileHash(path));
+        q.exec();
+    }
+    q.prepare("SELECT id FROM songs WHERE path = ?");
+    q.addBindValue(path);
+    if (q.exec() && q.next())
+        return q.value(0).toLongLong();
+    return -1;
+}
+
+QVector<CSongPart> CLibrary::parts(const QString &songPath) const
+{
+    QVector<CSongPart> result;
+    const qint64 id = songId(songPath, false);
+    if (id < 0)
+        return result;
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.prepare("SELECT id, name, start_bar, start_beat, start_ticks, end_bar, end_beat, end_ticks "
+              "FROM parts WHERE song_id = ? ORDER BY id");
+    q.addBindValue(id);
+    if (!q.exec())
+        return result;
+    while (q.next())
+    {
+        CSongPart part;
+        part.id = q.value(0).toLongLong();
+        part.name = q.value(1).toString();
+        part.start = { q.value(2).toInt(), q.value(3).toInt(), q.value(4).toLongLong() };
+        part.end = { q.value(5).toInt(), q.value(6).toInt(), q.value(7).toLongLong() };
+        result << part;
+    }
+    return result;
+}
+
+qint64 CLibrary::addPart(const QString &songPath, const QString &name, const CBarPosition &start, const CBarPosition &end)
+{
+    const qint64 id = songId(songPath, true);
+    if (id < 0)
+        return -1;
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.prepare("INSERT INTO parts (song_id, name, start_bar, start_beat, start_ticks, end_bar, end_beat, end_ticks) "
+              "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    for (const QVariant &value : QVariantList{ id, name, start.bar, start.beat, start.ticks, end.bar, end.beat, end.ticks })
+        q.addBindValue(value);
+    if (!q.exec())
+    {
+        ppLogError("Library database error: %s", qPrintable(q.lastError().text()));
+        return -1;
+    }
+    return q.lastInsertId().toLongLong();
+}
+
+void CLibrary::updatePart(const CSongPart &part)
+{
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.prepare("UPDATE parts SET name = ?, start_bar = ?, start_beat = ?, start_ticks = ?, "
+              "end_bar = ?, end_beat = ?, end_ticks = ? WHERE id = ?");
+    for (const QVariant &value : QVariantList{ part.name, part.start.bar, part.start.beat, part.start.ticks,
+                                               part.end.bar, part.end.beat, part.end.ticks, part.id })
+        q.addBindValue(value);
+    if (!q.exec())
+        ppLogError("Library database error: %s", qPrintable(q.lastError().text()));
+}
+
+void CLibrary::deletePart(qint64 id)
+{
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.prepare("DELETE FROM parts WHERE id = ?");
+    q.addBindValue(id);
+    q.exec();
 }
