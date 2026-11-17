@@ -190,6 +190,19 @@ public:
     double getCurrentBarPos(){ return m_bar.getCurrentBarPos();}
 
     void setPlayFromBar(double bar){ m_bar.setPlayFromBar(bar);}
+    void setPlayFrom(const CBarPosition &position){ m_bar.setPlayFrom(position);}
+    CBarPosition getPlayFrom() const { return m_bar.getPlayFrom();}
+    CBarPosition positionFromBarBeat(int bar, double beat, bool roundUp = false) const { return m_bar.positionFromBarBeat(bar, beat, roundUp);}
+    void setLoop(bool enabled, const CBarPosition &end){ m_bar.setLoop(enabled, end);}
+    bool isLoopEnabled() const { return m_bar.isLoopEnabled();}
+    bool isLoopActive() const { return m_bar.isLoopActive();}
+    CBarPosition getPlayUpto() const { return m_bar.getPlayUpto();}
+    double beatOfPosition(const CBarPosition &position) const { return m_bar.beatOfPosition(position);}
+
+    // The exact position of the notes the pianist is being waited for (or the current
+    // position if not waiting), to be used as the start position.
+    CBarPosition getCurrentNotePosition();
+
     void setPlayUptoBar(double bar){ m_bar.setPlayUptoBar(bar);}
     double getPlayUptoBar(){ return m_bar.getPlayUptoBar();}
     void setLoopingBars(double bars){ m_bar.setLoopingBars(bars);}

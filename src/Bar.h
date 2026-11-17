@@ -41,6 +41,26 @@
 
 typedef unsigned long eventBits_t;
 
+// An exact position in the song: the bar, the beat within the bar and the ticks within
+// the beat. Bars and beats count from 0 and the ticks are scaled by SPEED_ADJUST_FACTOR,
+// like all the time values in CBar. Being whole numbers, positions can be compared exactly.
+struct CBarPosition
+{
+    int bar = 0;
+    int beat = 0;
+    qint64 ticks = 0;
+
+    bool operator<(const CBarPosition &other) const
+    {
+        if (bar != other.bar)
+            return bar < other.bar;
+        if (beat != other.beat)
+            return beat < other.beat;
+        return ticks < other.ticks;
+    }
+    bool isSongStart() const { return bar <= 0 && beat <= 0 && ticks <= 0; }
+};
+
 // controls the bar numbers
 class CBar
 {
@@ -57,22 +77,32 @@ public:
     qint64 getBarLength() {return m_barLength;} // in ppqn
 
     void setPlayFromBar(double bar);
-    void setPlayFromBar(int bar, int beat = 0, int ticks = 0);
+    void setPlayFrom(const CBarPosition &position);
+    CBarPosition getPlayFrom() const { return m_playFrom; }
     void reset() {
         setTimeSig( 0 , 0);
-        m_playFromBar = 0.0;
-        m_playUptoBar = 0.0;
-        m_loopingBars = 0.0;
+        m_playFrom = CBarPosition();
+        m_playUpto = CBarPosition();
+        m_loopEnabled = false;
         m_seekingBarNumber = false;
         m_flushTicks = false;
         m_eventBits = 0;
         setupEnableFlags();
     }
 
+    // Repeat from the start position up to (and including) the notes at the end position.
+    // The end is an exact position of its own: changing the start does not move it.
+    void setLoop(bool enabled, const CBarPosition &end);
+    bool isLoopEnabled() const { return m_loopEnabled; }
+    CBarPosition getPlayUpto() const { return m_playUpto; }
+    // true when the loop is enabled and its end is after the start, so it is used
+    bool isLoopActive() const { return m_enableLooping; }
+
+    // Old interface, in bars with decimals
     void setPlayUptoBar(double bar);
-    double getPlayUptoBar(){ return m_playUptoBar;}
+    double getPlayUptoBar() const { return barPosOfPosition(m_playUpto); }
     void setLoopingBars(double bars);
-    double getLoopingBars(){ return m_loopingBars;}
+    double getLoopingBars() const { return m_enableLooping ? getPlayUptoBar() - barPosOfPosition(m_playFrom) : 0.0; }
 
     void rewind() {
         int top = m_startTimeSigTop;
@@ -90,14 +120,40 @@ public:
     //return true if bar number has changed
     qint64 addDeltaTime(qint64 ticks);
 
+    // Moves the current position by a (possibly negative) number of ticks, without
+    // any of the side effects of addDeltaTime(); used to stay in step with the conductor.
+    void adjustDeltaTime(qint64 ticks);
+
     //
     int getBarNumber(){ return m_barCounter;}
 
-    double getCurrentBarPos()
+    CBarPosition getCurrentPosition() const { return { m_barCounter, m_beatCounter, m_deltaTime }; }
+
+    // Returns the position moved by a (possibly negative) number of ticks,
+    // using the current time signature.
+    CBarPosition offsetPosition(CBarPosition position, qint64 ticks) const;
+
+    // Converts a bar and a beat (both counting from 0, the beat may have a fraction)
+    // to a position, using the current time signature. The fraction is rounded down,
+    // so that a start position is never after the note that the user meant; with
+    // roundUp it is rounded up, so that an end position is never before it.
+    CBarPosition positionFromBarBeat(int bar, double beat, bool roundUp = false) const;
+    static constexpr double END_BEAT_TOLERANCE = 0.01; // the precision of the beat fields
+
+    // Returns the beat (counting from 0, with a fraction) of a position.
+    double beatOfPosition(const CBarPosition &position) const
     {
-        return m_barCounter + static_cast<double>(m_beatCounter)/static_cast<double>(m_currentTimeSigBottom) +
-            static_cast<double>(m_deltaTime)/static_cast<double>(m_beatLength * m_currentTimeSigBottom * SPEED_ADJUST_FACTOR);
+        return position.beat + static_cast<double>(position.ticks) /
+            static_cast<double>(m_beatLength * SPEED_ADJUST_FACTOR);
     }
+
+    // The position as a bar number with the fraction of the bar as decimals.
+    double barPosOfPosition(const CBarPosition &position) const
+    {
+        return position.bar + beatOfPosition(position) / static_cast<double>(m_currentTimeSigTop);
+    }
+
+    double getCurrentBarPos() const { return barPosOfPosition(getCurrentPosition()); }
 
     bool seekingBarNumber() { return m_seekingBarNumber;}
 
@@ -114,9 +170,12 @@ private:
     void checkGotoBar();
     void setupEnableFlags()
     {
-        m_enableLooping = (m_loopingBars > 0.0)?true:false;
-        m_enablePlayFromBar = (m_enableLooping || m_playFromBar > 0.0)?true:false;
+        m_enableLooping = m_loopEnabled && m_playFrom < m_playUpto;
+        m_enablePlayFromBar = (m_enableLooping || !m_playFrom.isSongStart())?true:false;
     }
+
+    // Moves the bar and beat counters so that m_deltaTime is within the current beat.
+    void normaliseDeltaTime();
 
     qint64 m_deltaTime;
     qint64 m_beatLength; //in ppqn ticks
@@ -129,9 +188,9 @@ private:
 
     int m_barCounter;
     int m_beatCounter;
-    double m_playFromBar;
-    double m_playUptoBar;
-    double m_loopingBars;
+    CBarPosition m_playFrom;
+    CBarPosition m_playUpto;
+    bool m_loopEnabled;
     bool m_seekingBarNumber;
     bool m_flushTicks;
     eventBits_t m_eventBits;

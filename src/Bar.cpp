@@ -28,6 +28,8 @@
 
 #include "Bar.h"
 
+#include <cmath>
+
 #define OPTION_DEBUG_BAR     0
 #if OPTION_DEBUG_BAR
 #define ppDEBUG_BAR(args)     ppLogDebug args
@@ -64,11 +66,28 @@ qint64 CBar::addDeltaTime(qint64 ticks)
         return 0;
     }
     m_deltaTime +=ticks;
+    normaliseDeltaTime();
     if (ticks && m_enablePlayFromBar)
         checkGotoBar();
-    while (m_deltaTime > m_beatLength * SPEED_ADJUST_FACTOR)
+
+    return ticks;
+}
+
+void CBar::adjustDeltaTime(qint64 ticks)
+{
+    m_deltaTime += ticks;
+    normaliseDeltaTime();
+}
+
+void CBar::normaliseDeltaTime()
+{
+    const qint64 beatTicks = m_beatLength * SPEED_ADJUST_FACTOR;
+    if (beatTicks <= 0)
+        return;
+
+    while (m_deltaTime >= beatTicks)
     {
-        m_deltaTime -= m_beatLength * SPEED_ADJUST_FACTOR;
+        m_deltaTime -= beatTicks;
         m_beatCounter++;
         if (m_beatCounter >= m_currentTimeSigTop)
         {
@@ -78,22 +97,90 @@ qint64 CBar::addDeltaTime(qint64 ticks)
             m_eventBits |= EVENT_BITS_newBarNumber;
         }
     }
-
-    return ticks;
+    while (m_deltaTime < 0 && (m_beatCounter > 0 || m_barCounter > 0))
+    {
+        m_deltaTime += beatTicks;
+        if (m_beatCounter > 0)
+            m_beatCounter--;
+        else
+        {
+            m_barCounter--;
+            m_beatCounter = m_currentTimeSigTop - 1;
+            m_eventBits |= EVENT_BITS_newBarNumber;
+        }
+    }
 }
 
+CBarPosition CBar::offsetPosition(CBarPosition position, qint64 ticks) const
+{
+    const qint64 beatTicks = m_beatLength * SPEED_ADJUST_FACTOR;
+    position.ticks += ticks;
+    if (beatTicks <= 0)
+        return position;
+
+    while (position.ticks >= beatTicks)
+    {
+        position.ticks -= beatTicks;
+        if (++position.beat >= m_currentTimeSigTop)
+        {
+            position.beat = 0;
+            position.bar++;
+        }
+    }
+    while (position.ticks < 0 && (position.beat > 0 || position.bar > 0))
+    {
+        position.ticks += beatTicks;
+        if (position.beat > 0)
+            position.beat--;
+        else
+        {
+            position.bar--;
+            position.beat = m_currentTimeSigTop - 1;
+        }
+    }
+    return position;
+}
+
+CBarPosition CBar::positionFromBarBeat(int bar, double beat, bool roundUp) const
+{
+    if (bar < 0)
+        bar = 0;
+    if (beat < 0.0)
+        beat = 0.0;
+
+    const qint64 beatTicks = m_beatLength * SPEED_ADJUST_FACTOR;
+    // Beats are typed with two decimals, so an end typed as e.g. 2.33 is meant to
+    // include a note at 2 1/3: extend it by the precision of the field.
+    if (roundUp)
+        beat += END_BEAT_TOLERANCE;
+    const int wholeBeats = static_cast<int>(beat);
+    // round the fraction down for a start (never after the intended note),
+    // up for an end (never before it)
+    const double exactTicks = (beat - wholeBeats) * static_cast<double>(beatTicks);
+    const auto fractionTicks = static_cast<qint64>(roundUp ? std::ceil(exactTicks) : std::floor(exactTicks));
+    // offsetPosition() also moves beats past the end of the bar into the next bars
+    return offsetPosition({ bar, 0, 0 }, wholeBeats * beatTicks + fractionTicks);
+}
+
+// Advances the time while seeking the start position: to the next beat, or exactly to the
+// start position when it is within the current beat.
 qint64 CBar::goToBarNumer()
 {
-    const auto ticks = static_cast<qint64>(m_playFromBar - getCurrentBarPos()) * m_beatLength * SPEED_ADJUST_FACTOR + 1;
+    qint64 ticks;
+    if (m_barCounter == m_playFrom.bar && m_beatCounter == m_playFrom.beat)
+        ticks = m_playFrom.ticks - m_deltaTime;
+    else
+        ticks = m_beatLength * SPEED_ADJUST_FACTOR - m_deltaTime;
+    if (ticks <= 0)
+        ticks = 1;
     addDeltaTime(ticks);
     return ticks;
 }
 
 void CBar::checkGotoBar()
 {
-    double currentBar = getCurrentBarPos();
-    ppDEBUG_BAR(("checkGotoBar currentBarPos %.1f", currentBar));
-    if (currentBar < m_playFromBar )
+    ppDEBUG_BAR(("checkGotoBar currentBarPos %.3f", getCurrentBarPos()));
+    if (getCurrentPosition() < m_playFrom)
         m_seekingBarNumber = true;
     else
     {
@@ -101,38 +188,48 @@ void CBar::checkGotoBar()
             m_flushTicks = true; // now throw away ticks before we start the music
         m_seekingBarNumber = false;
 
-        if (m_enableLooping && currentBar > m_playUptoBar )
+        // repeat once past the end, so that the notes at the end position are included
+        if (m_enableLooping && m_playUpto < getCurrentPosition())
             m_eventBits |= EVENT_BITS_UptoBarReached;
     }
 }
 
 void CBar::setPlayFromBar(double bar)
 {
-    m_playFromBar = bar;
-    m_playUptoBar = m_playFromBar + m_loopingBars;
+    const int wholeBar = static_cast<int>(bar);
+    setPlayFrom(positionFromBarBeat(wholeBar, (bar - wholeBar) * m_currentTimeSigTop));
+}
+
+void CBar::setPlayFrom(const CBarPosition &position)
+{
+    m_playFrom = position;
     setupEnableFlags();
     checkGotoBar();
 }
 
-void CBar::setPlayFromBar(int bar, int beat, int ticks)
+void CBar::setLoop(bool enabled, const CBarPosition &end)
 {
-    Q_UNUSED(beat)
-    Q_UNUSED(ticks)
-    double playFromBar = bar;
-    setPlayFromBar( playFromBar);
+    m_loopEnabled = enabled;
+    m_playUpto = end;
+    setupEnableFlags();
+    checkGotoBar();
 }
 
 void CBar::setPlayUptoBar(double endBar)
 {
-    setLoopingBars(endBar - m_playUptoBar);
+    if (endBar <= 0.0)
+    {
+        setLoop(false, m_playUpto);
+        return;
+    }
+    const int wholeBar = static_cast<int>(endBar);
+    setLoop(true, positionFromBarBeat(wholeBar, (endBar - wholeBar) * m_currentTimeSigTop));
 }
 
 void CBar::setLoopingBars(double bars)
 {
-    if (bars < 0.0)
-        bars = 0;
-    m_loopingBars = bars;
-    m_playUptoBar = m_playFromBar + m_loopingBars;
-    setupEnableFlags();
-    checkGotoBar();
+    if (bars <= 0.0)
+        setLoop(false, m_playUpto);
+    else
+        setPlayUptoBar(barPosOfPosition(m_playFrom) + bars);
 }

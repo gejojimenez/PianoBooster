@@ -155,12 +155,35 @@
       </widget>
      </item>
      <item>
-      <widget class="QDoubleSpinBox" name="startBarSpin">
+      <widget class="QSpinBox" name="startBarSpin">
+       <property name="maximum">
+        <number>999</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="startBeatLabel">
+       <property name="text">
+        <string>Beat:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="startBeatSpin">
+       <property name="toolTip">
+        <string>Beat within the start bar (1 is the first beat, 2.5 is halfway through the second beat)</string>
+       </property>
        <property name="decimals">
-        <number>1</number>
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>1.000000000000000</double>
        </property>
        <property name="maximum">
-        <double>999.899999999999977</double>
+        <double>32.990000000000002</double>
+       </property>
+       <property name="singleStep">
+        <double>0.500000000000000</double>
        </property>
       </widget>
      </item>

@@ -1,3 +1,15 @@
+1.0.3 (17 Nov 2026)
+- Fixed the start position not starting on the intended note:
+  - The start is now set as a bar and a beat (with decimals, e.g. 2.5), and stored
+    as an exact position instead of a bar number rounded to one decimal.
+  - "Save this Bar Number" (the flag) now stores the exact position of the note being
+    waited for, so playing starts on that note.
+  - The bar position was a little ahead of the notes when waiting for the pianist.
+  - The decimals of a bar position were wrong for time signatures other than 4/4.
+- The end of the repeated section is also an exact end bar and beat (instead of a number
+  of bars after the start), and includes the notes at that position. It can be set to the
+  current notes with a flag button, like the start.
+
 1.0.2 (17 Nov 2026)
 - The display no longer turns off while a song is playing, and notes played on the
   MIDI keyboard count as user activity (Windows only for now).

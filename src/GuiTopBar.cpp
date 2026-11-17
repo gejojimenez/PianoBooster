@@ -28,6 +28,8 @@
 
 #include <QtWidgets>
 
+#include <cmath>
+
 #include "GuiTopBar.h"
 #include "TrackList.h"
 #include "GuiLoopingPopup.h"
@@ -47,6 +49,8 @@ GuiTopBar::GuiTopBar(QWidget *parent, CSettings* settings)
     speedSpin->setSuffix(" %");
     speedSpin->setSingleStep(2);
     speedSpin->setValue(100);
+    // don't let the layout squeeze it so much that the value is cut off
+    speedSpin->setMinimumWidth(speedSpin->sizeHint().width());
 
     transposeSpin->setMaximum(12);
     transposeSpin->setMinimum(-12);
@@ -71,6 +75,7 @@ void GuiTopBar::refresh(bool reset)
         reloadKeyCombo(true);
         transposeSpin->setValue(0);
         startBarSpin->setValue(0);
+        startBeatSpin->setValue(1.0);
     }
     int index = 0;
     if (m_song)
@@ -236,13 +241,27 @@ void GuiTopBar::on_speedSpin_valueChanged(int speed)
     m_song->setSpeed(static_cast<float>(speed) / 100.0f);
 }
 
-void GuiTopBar::on_startBarSpin_valueChanged(double bar)
+void GuiTopBar::on_startBarSpin_valueChanged(int bar)
+{
+    Q_UNUSED(bar)
+    startPositionEdited();
+}
+
+void GuiTopBar::on_startBeatSpin_valueChanged(double beat)
+{
+    Q_UNUSED(beat)
+    startPositionEdited();
+}
+
+// The user has typed a start bar or beat
+void GuiTopBar::startPositionEdited()
 {
     if (!m_song) return;
 
     stopMuiscPlaying();
 
-    m_song->setPlayFromBar( bar);
+    // the beat is shown counting from 1, but positions count beats from 0
+    m_song->setPlayFrom(m_song->positionFromBarBeat(startBarSpin->value(), startBeatSpin->value() - 1.0));
 }
 
 // Stop the muisc playing
@@ -258,8 +277,20 @@ void GuiTopBar::on_saveBarButton_clicked(bool clicked)
 {
     Q_UNUSED(clicked)
     if (!m_song) return;
-    double barNumber = m_song->getCurrentBarPos();
-    startBarSpin->setValue(barNumber);
+
+    // Use the exact position of the current notes, so that playing starts on them.
+    const CBarPosition position = m_song->getCurrentNotePosition();
+
+    // Only display it: rounding the beat to two decimals could move it past the notes.
+    // It is rounded down so that typing the shown value again also starts before them.
+    const double beat = std::floor((m_song->beatOfPosition(position) + 1.0) * 100.0) / 100.0;
+    const QSignalBlocker blockBar(startBarSpin);
+    const QSignalBlocker blockBeat(startBeatSpin);
+    startBarSpin->setValue(position.bar);
+    startBeatSpin->setValue(beat);
+
+    stopMuiscPlaying();
+    m_song->setPlayFrom(position);
 }
 
 void GuiTopBar::on_loopingBarsPopupButton_clicked(bool clicked)

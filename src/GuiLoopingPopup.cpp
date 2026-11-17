@@ -26,6 +26,8 @@
 
 #include <QtWidgets>
 
+#include <cmath>
+
 #include "GuiLoopingPopup.h"
 #include "GlView.h"
 
@@ -41,24 +43,89 @@ GuiLoopingPopup::GuiLoopingPopup(QWidget *parent)
 void GuiLoopingPopup::init(CSong* song)
 {
     m_song = song;
-    loopBarsSpin->setValue(m_song->getLoopingBars());
+
+    const QSignalBlocker blockCheck(loopCheck);
+    loopCheck->setChecked(m_song->isLoopEnabled());
+
+    m_end = m_song->getPlayUpto();
+    if (!m_song->isLoopEnabled() && !(m_song->getPlayFrom() < m_end))
+        m_end = { m_song->getPlayFrom().bar + 1, 0, 0 }; // suggest the bar after the start
+    showEnd(m_end);
+    updateInfo();
+}
+
+// Shows a position in the end bar and beat fields, without changing the end.
+void GuiLoopingPopup::showEnd(const CBarPosition &end)
+{
+    // The beat is shown counting from 1, rounded up so that typing the shown value
+    // again still ends after the notes.
+    const double beat = std::ceil((m_song->beatOfPosition(end) + 1.0) * 100.0 - 1e-6) / 100.0;
+    const QSignalBlocker blockBar(endBarSpin);
+    const QSignalBlocker blockBeat(endBeatSpin);
+    endBarSpin->setValue(end.bar);
+    endBeatSpin->setValue(beat);
+}
+
+void GuiLoopingPopup::on_loopCheck_toggled(bool checked)
+{
+    Q_UNUSED(checked)
+    applyLoop();
+}
+
+void GuiLoopingPopup::on_endBarSpin_valueChanged(int bar)
+{
+    Q_UNUSED(bar)
+    endEdited();
+}
+
+void GuiLoopingPopup::on_endBeatSpin_valueChanged(double beat)
+{
+    Q_UNUSED(beat)
+    endEdited();
+}
+
+// The user has typed an end bar or beat
+void GuiLoopingPopup::endEdited()
+{
+    if (!m_song) return;
+    // the beat is shown counting from 1; round up so the notes at the end are included
+    m_end = m_song->positionFromBarBeat(endBarSpin->value(), endBeatSpin->value() - 1.0, true);
+    const QSignalBlocker blockCheck(loopCheck);
+    loopCheck->setChecked(true); // editing the end means the user wants to repeat
+    applyLoop();
+}
+
+// Use the exact position of the current notes as the end
+void GuiLoopingPopup::on_endHereButton_clicked(bool clicked)
+{
+    Q_UNUSED(clicked)
+    if (!m_song) return;
+    m_end = m_song->getCurrentNotePosition();
+    showEnd(m_end);
+    const QSignalBlocker blockCheck(loopCheck);
+    loopCheck->setChecked(true);
+    applyLoop();
+}
+
+void GuiLoopingPopup::applyLoop()
+{
+    if (!m_song) return;
+    m_song->setLoop(loopCheck->isChecked(), m_end);
     updateInfo();
 }
 
 void GuiLoopingPopup::updateInfo()
 {
-    if (m_song->getLoopingBars() > 0.0)
-        loopingText->setText(tr("Repeat End Bar:") + " " + QString().setNum(m_song->getPlayUptoBar()));
-    else
+    if (!loopCheck->isChecked())
         loopingText->setText(tr("Repeat Bar is disabled"));
-}
-
-void GuiLoopingPopup::on_loopBarsSpin_valueChanged(double bars)
-{
-    if (!m_song) return;
-
-    m_song->setLoopingBars( bars);
-    updateInfo();
+    else if (!m_song->isLoopActive())
+        loopingText->setText(tr("The end must be after the start bar"));
+    else
+    {
+        const CBarPosition start = m_song->getPlayFrom();
+        const double startBeat = std::floor((m_song->beatOfPosition(start) + 1.0) * 100.0) / 100.0;
+        loopingText->setText(tr("Repeats from bar %1, beat %2").arg(start.bar).arg(QLocale().toString(startBeat, 'g', 4)));
+    }
 }
 
 void GuiLoopingPopup::closeEvent(QCloseEvent *event)

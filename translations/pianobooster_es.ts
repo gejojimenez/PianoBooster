@@ -856,6 +856,34 @@
         <translation>Repetir Compases:</translation>
     </message>
     <message>
+        <source>Repeat up to the end bar</source>
+        <translation>Repetir hasta el compás final</translation>
+    </message>
+    <message>
+        <source>End Bar:</source>
+        <translation>Compás Final:</translation>
+    </message>
+    <message>
+        <source>Beat:</source>
+        <translation>Tiempo:</translation>
+    </message>
+    <message>
+        <source>Beat within the end bar (1 is the first beat, 2.5 is halfway through the second beat)</source>
+        <translation>Tiempo dentro del compás final (1 es el primer tiempo, 2,5 es la mitad del segundo tiempo)</translation>
+    </message>
+    <message>
+        <source>Set the end to the current notes</source>
+        <translation>Fijar el final en las notas actuales</translation>
+    </message>
+    <message>
+        <source>The end must be after the start bar</source>
+        <translation>El final debe estar después del compás inicial</translation>
+    </message>
+    <message>
+        <source>Repeats from bar %1, beat %2</source>
+        <translation>Se repite desde el compás %1, tiempo %2</translation>
+    </message>
+    <message>
         <location filename="../src/GuiLoopingPopup.ui" line="73"/>
         <source>End bar</source>
         <translation>Compás Final</translation>
@@ -1350,6 +1378,14 @@
         <location filename="../src/GuiTopBar.ui" line="153"/>
         <source>Start Bar:</source>
         <translation>Compás Inicial:</translation>
+    </message>
+    <message>
+        <source>Beat:</source>
+        <translation>Tiempo:</translation>
+    </message>
+    <message>
+        <source>Beat within the start bar (1 is the first beat, 2.5 is halfway through the second beat)</source>
+        <translation>Tiempo dentro del compás inicial (1 es el primer tiempo, 2,5 es la mitad del segundo tiempo)</translation>
     </message>
     <message>
         <location filename="../src/GuiTopBar.ui" line="170"/>

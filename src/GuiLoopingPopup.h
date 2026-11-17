@@ -46,12 +46,19 @@ public:
     void init(CSong* song);
 
 private slots:
-    void on_loopBarsSpin_valueChanged(double bars);
+    void on_loopCheck_toggled(bool checked);
+    void on_endBarSpin_valueChanged(int bar);
+    void on_endBeatSpin_valueChanged(double beat);
+    void on_endHereButton_clicked(bool clicked);
     void closeEvent(QCloseEvent *event);
 
 private:
+    void showEnd(const CBarPosition &end);
+    void endEdited();
+    void applyLoop();
     void updateInfo();
     CSong* m_song;
+    CBarPosition m_end; // the exact end position
 };
 
 #endif //__GUILOOPINGPOPUP_H__

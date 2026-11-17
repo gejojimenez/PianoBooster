@@ -848,7 +848,9 @@ void CConductor::followPlaying()
         {
             m_followState = PB_FOLLOW_waiting;
             // Throw away the time past the stop point (by adding a negative ticks)
-            addDeltaTime( -m_stopPoint*SPEED_ADJUST_FACTOR - m_chordDeltaTime);
+            const qint64 pastStopPoint = -m_stopPoint*SPEED_ADJUST_FACTOR - m_chordDeltaTime;
+            addDeltaTime(pastStopPoint);
+            m_bar.adjustDeltaTime(pastStopPoint); // keep the bar position in step
         }
     }
     else // m_playMode == PB_PLAY_MODE_playAlong
@@ -863,6 +865,16 @@ void CConductor::followPlaying()
     }
     if (deltaAdjustL(m_chordDeltaTime) > -m_cfg_earlyNotesPoint )
         turnOnKeyboardLights(true);
+}
+
+CBarPosition CConductor::getCurrentNotePosition()
+{
+    CBarPosition position = m_bar.getCurrentPosition();
+    // When waiting for the pianist the time has passed the notes by m_chordDeltaTime
+    // (the stop point), so go back to exactly where the notes are.
+    if (m_followState == PB_FOLLOW_waiting && m_wantedChord.length() > 0 && m_chordDeltaTime > 0)
+        position = m_bar.offsetPosition(position, -m_chordDeltaTime);
+    return position;
 }
 
 void CConductor::outputSavedNotesOff()
