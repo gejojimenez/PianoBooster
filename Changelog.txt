@@ -1,3 +1,8 @@
+1.0.5 (17 Nov 2026)
+- The bar numbers are shown in the score, above the start of each bar.
+- Bars are numbered from 1, like in printed music, everywhere: the bar counter,
+  the start bar and the end bar of the repeated section.
+
 1.0.4 (17 Nov 2026)
 - Fixed the bar lines and beat markers in the score when the time signature changes
   (e.g. from 4/4 to 12/8): the new time signature was used from one beat too early and

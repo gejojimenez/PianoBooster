@@ -27,6 +27,7 @@
 /*********************************************************************************/
 
 #include "Draw.h"
+#include "Bar.h"
 #include "Cfg.h"
 #include "Settings.h"
 #include "Notation.h"
@@ -756,6 +757,15 @@ void CDraw::drawSymbol(CSymbol symbol, float x, float y, CSlot* slot)
             drColor(Cfg::barMarkerColor());
             oneLine(x, CStavePos(PB_PART_right, m_beatMarkerHeight).getPosYRelative(), x, CStavePos(PB_PART_left, -m_beatMarkerHeight).getPosYRelative());
             glDisable (GL_LINE_STIPPLE);
+#ifndef NO_USE_FTGL
+            // the bar number above the stave, counting from 1 like in printed music
+            if (symbol.getBarNumber() > 0)
+            {
+                drColor(Cfg::noteNameColor());
+                renderText(x, CStavePos(PB_PART_right, m_beatMarkerHeight + 3).getPosYRelative(),
+                           QByteArray::number(symbol.getBarNumber() + FIRST_BAR_NUMBER).constData());
+            }
+#endif
             break;
 
         case PB_SYMBOL_beatMarker:

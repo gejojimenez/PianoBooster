@@ -41,8 +41,11 @@
      </item>
      <item>
       <widget class="QSpinBox" name="endBarSpin">
+       <property name="minimum">
+        <number>1</number>
+       </property>
        <property name="maximum">
-        <number>999</number>
+        <number>1000</number>
        </property>
       </widget>
      </item>

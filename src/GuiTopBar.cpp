@@ -74,7 +74,7 @@ void GuiTopBar::refresh(bool reset)
         majorCombo->setCurrentIndex(0);
         reloadKeyCombo(true);
         transposeSpin->setValue(0);
-        startBarSpin->setValue(0);
+        startBarSpin->setValue(FIRST_BAR_NUMBER);
         startBeatSpin->setValue(1.0);
     }
     int index = 0;
@@ -261,7 +261,7 @@ void GuiTopBar::startPositionEdited()
     stopMuiscPlaying();
 
     // the beat is shown counting from 1, but positions count beats from 0
-    m_song->setPlayFrom(m_song->positionFromBarBeat(startBarSpin->value(), startBeatSpin->value() - 1.0));
+    m_song->setPlayFrom(m_song->positionFromBarBeat(startBarSpin->value() - FIRST_BAR_NUMBER, startBeatSpin->value() - 1.0));
 }
 
 // Stop the muisc playing
@@ -286,7 +286,7 @@ void GuiTopBar::on_saveBarButton_clicked(bool clicked)
     const double beat = std::floor((m_song->beatOfPosition(position) + 1.0) * 100.0) / 100.0;
     const QSignalBlocker blockBar(startBarSpin);
     const QSignalBlocker blockBeat(startBeatSpin);
-    startBarSpin->setValue(position.bar);
+    startBarSpin->setValue(position.bar + FIRST_BAR_NUMBER);
     startBeatSpin->setValue(beat);
 
     stopMuiscPlaying();

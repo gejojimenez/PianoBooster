@@ -62,7 +62,7 @@ void GuiLoopingPopup::showEnd(const CBarPosition &end)
     const double beat = std::ceil((m_song->beatOfPosition(end) + 1.0) * 100.0 - 1e-6) / 100.0;
     const QSignalBlocker blockBar(endBarSpin);
     const QSignalBlocker blockBeat(endBeatSpin);
-    endBarSpin->setValue(end.bar);
+    endBarSpin->setValue(end.bar + FIRST_BAR_NUMBER);
     endBeatSpin->setValue(beat);
 }
 
@@ -89,7 +89,7 @@ void GuiLoopingPopup::endEdited()
 {
     if (!m_song) return;
     // the beat is shown counting from 1; round up so the notes at the end are included
-    m_end = m_song->positionFromBarBeat(endBarSpin->value(), endBeatSpin->value() - 1.0, true);
+    m_end = m_song->positionFromBarBeat(endBarSpin->value() - FIRST_BAR_NUMBER, endBeatSpin->value() - 1.0, true);
     const QSignalBlocker blockCheck(loopCheck);
     loopCheck->setChecked(true); // editing the end means the user wants to repeat
     applyLoop();
@@ -124,7 +124,7 @@ void GuiLoopingPopup::updateInfo()
     {
         const CBarPosition start = m_song->getPlayFrom();
         const double startBeat = std::floor((m_song->beatOfPosition(start) + 1.0) * 100.0) / 100.0;
-        loopingText->setText(tr("Repeats from bar %1, beat %2").arg(start.bar).arg(QLocale().toString(startBeat, 'g', 4)));
+        loopingText->setText(tr("Repeats from bar %1, beat %2").arg(start.bar + FIRST_BAR_NUMBER).arg(QLocale().toString(startBeat, 'g', 4)));
     }
 }
 

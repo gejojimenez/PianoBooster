@@ -264,7 +264,7 @@ void CGLView::drawBarNumber()
     //CDraw::drColor (Cfg::noteColorDim());
     //glRectf(x+30+10, y-2, x + 80, y + 16);
     glColor3f(1.0f,1.0f,1.0f);
-    renderText(x, y, 0, tr("Bar:") + " " + QString::number(m_song->getBarNumber()), m_timeRatingFont);
+    renderText(x, y, 0, tr("Bar:") + " " + QString::number(m_song->getBarNumber() + FIRST_BAR_NUMBER), m_timeRatingFont);
 }
 
 void CGLView::resizeGL(int width, int height)

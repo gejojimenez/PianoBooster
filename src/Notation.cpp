@@ -110,7 +110,9 @@ CSlot CNotation::nextBeatMarker()
     if (m_pendingBarMarker)
     {
         m_pendingBarMarker = false;
-        slot.setSymbol(m_pendingBarMarkerTime - m_markerEmitTime, CSymbol( PB_SYMBOL_barMarker, PB_PART_both, 0 ));
+        CSymbol barMarker( PB_SYMBOL_barMarker, PB_PART_both, 0 );
+        barMarker.setBarNumber(++m_markerBarNumber); // the bar that starts here
+        slot.setSymbol(m_pendingBarMarkerTime - m_markerEmitTime, barMarker);
         m_markerEmitTime = m_pendingBarMarkerTime;
         return slot;
     }
@@ -418,6 +420,7 @@ void CNotation::reset()
     m_beatStartTime = 0;
     m_markerEmitTime = 0;
     m_pendingBarMarker = false;
+    m_markerBarNumber = 0;
     m_pendingBarMarkerTime = 0;
     m_earlyBarChangeCounter = 0;
     m_earlyBarChangeDelta = cfg_earlBarLead; // We want to detect the bar change early

@@ -41,6 +41,10 @@
 
 typedef unsigned long eventBits_t;
 
+// Bars are counted from 0 internally, but shown to the user counting from 1,
+// like in printed music: shown bar = bar + FIRST_BAR_NUMBER.
+constexpr int FIRST_BAR_NUMBER = 1;
+
 // An exact position in the song: the bar, the beat within the bar and the ticks within
 // the beat. Bars and beats count from 0 and the ticks are scaled by SPEED_ADJUST_FACTOR,
 // like all the time values in CBar. Being whole numbers, positions can be compared exactly.

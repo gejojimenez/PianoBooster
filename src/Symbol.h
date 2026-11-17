@@ -117,6 +117,9 @@ public:
     ////////////////////////////////////////////////////////////////////////////////
     //@brief returns the midi note number
     int getNote(){return m_midiNote;}
+    // the bar number shown at a bar marker (counting from 0, like CBar)
+    void setBarNumber(int barNumber) { m_barNumber = barNumber; }
+    int getBarNumber() const { return m_barNumber; }
 
     ////////////////////////////////////////////////////////////////////////////////
     //@brief returns the midi note number
@@ -168,11 +171,13 @@ private:
         m_pianistTiming = NOT_USED;
         setIndex(0,0);
         m_accidentalModifer = PB_ACCIDENTAL_MODIFER_noChange;
+        m_barNumber = 0;
     }
 
     CStavePos m_stavePos;
     musicalSymbol_t m_symbolType;
     int m_midiNote;
+    int m_barNumber;
     accidentalModifer_t m_accidentalModifer; // Used to suppress the second sharp in the same bar
     int m_midiDuration;
     whichPart_t m_hand;

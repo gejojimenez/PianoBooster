@@ -224,6 +224,7 @@ private:
     bool m_pendingBarMarker;          // a bar marker follows the bar line just returned
     qint64 m_pendingBarMarkerTime;
     int m_beatPerBarCounter;          // the current beat in the bar, counting from 0
+    int m_markerBarNumber;            // the current bar of the beat markers, counting from 0
     int m_earlyBarChangeCounter;
     qint64 m_earlyBarChangeDelta; // Counts the ppqn in one bar
     CSlot m_mergeSlots[2];
