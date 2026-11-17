@@ -61,8 +61,6 @@ public slots:
 
 private slots:
     void on_speedSpin_valueChanged(int speed);
-    void on_startBarSpin_valueChanged(int bar);
-    void on_startBeatSpin_valueChanged(double beat);
 
     void on_transposeSpin_valueChanged(int value);
     void on_keyCombo_activated(int index);
@@ -72,11 +70,10 @@ private slots:
         reloadKeyCombo((index == 0)?true:false);
     }
 
-    void on_saveBarButton_clicked(bool clicked);
     void on_loopingBarsPopupButton_clicked(bool clicked);
 
 private:
-    void startPositionEdited();
+    void updateSectionSummary();
     bool eventFilter(QObject *obj, QEvent *event);
     void reloadKeyCombo(bool major);
 

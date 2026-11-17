@@ -830,6 +830,13 @@
 </context>
 <context>
     <name>GuiLoopingPopup</name>
+    <message><source>Start and Repeat</source><translation>Inicio y repetición</translation></message>
+    <message><source>Start Bar:</source><translation>Compás Inicial:</translation></message>
+    <message><source>Beat within the start bar (1 is the first beat, 2.5 is halfway through the second beat)</source><translation>Tiempo dentro del compás inicial (1 es el primer tiempo, 2,5 es la mitad del segundo tiempo)</translation></message>
+    <message><source>Set the start to the current notes</source><translation>Fijar el inicio en las notas actuales</translation></message>
+    <message><source>bar %1</source><translation>compás %1</translation></message>
+    <message><source>bar %1, beat %2</source><translation>compás %1, tiempo %2</translation></message>
+    <message><source>Repeats from %1 to %2</source><translation>Se repite desde el %1 hasta el %2</translation></message>
     <message>
         <location filename="../src/GuiLoopingPopup.cpp" line="37"/>
         <source>Continuous Looping</source>
@@ -1347,6 +1354,9 @@
 </context>
 <context>
     <name>GuiTopBar</name>
+    <message><source>Start / Repeat</source><translation>Inicio / Repetición</translation></message>
+    <message><source>From %1</source><translation>Desde %1</translation></message>
+    <message><source>Start position and repeated section</source><translation>Posición de inicio y sección que se repite</translation></message>
     <message>
         <location filename="../src/GuiTopBar.ui" line="32"/>
         <source>Form</source>

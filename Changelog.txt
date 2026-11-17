@@ -1,3 +1,12 @@
+1.1.1 (17 Nov 2026)
+- The window opens maximized. Its size when it is not maximized is still saved,
+  and used when it is restored down.
+- The start bar and beat moved from the top bar to the popup of the repeated section,
+  now called "Start and Repeat", next to the end bar and beat. The button that opens it
+  shows a summary (e.g. "bar 12 → bar 14 ↻"). The top bar was wider than many screens,
+  so the window could not be restored down to a smaller size.
+- The popup stays on the screen when its button is near the right side.
+
 1.1.0 (17 Nov 2026)
 - New song library (File/Library..., Ctrl+B, or the Library button in the side panel):
   - Favourite songs, recently opened songs and the MIDI files in your own folders

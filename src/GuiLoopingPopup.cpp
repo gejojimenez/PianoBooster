@@ -36,13 +36,15 @@ GuiLoopingPopup::GuiLoopingPopup(QWidget *parent)
 {
     setupUi(this);
     m_song = nullptr;
-    setWindowTitle(tr("Continuous Looping"));
+    setWindowTitle(tr("Start and Repeat"));
     setWindowFlags(Qt::Popup);
 }
 
 void GuiLoopingPopup::init(CSong* song)
 {
     m_song = song;
+
+    showStart(m_song->getPlayFrom());
 
     const QSignalBlocker blockCheck(loopCheck);
     loopCheck->setChecked(m_song->isLoopEnabled());
@@ -51,6 +53,60 @@ void GuiLoopingPopup::init(CSong* song)
     if (!m_song->isLoopEnabled() && !(m_song->getPlayFrom() < m_end))
         m_end = { m_song->getPlayFrom().bar + 1, 0, 0 }; // suggest the bar after the start
     showEnd(m_end);
+    updateInfo();
+}
+
+// A position as text for the user, e.g. "bar 12" or "bar 12, beat 2.5". The beat is
+// rounded down for a start and up for an end, like in the fields.
+QString GuiLoopingPopup::positionText(CSong *song, const CBarPosition &position, bool roundUp)
+{
+    const double exact = (song->beatOfPosition(position) + 1.0) * 100.0;
+    const double beat = (roundUp ? std::ceil(exact - 1e-6) : std::floor(exact + 1e-6)) / 100.0;
+    if (beat == 1.0)
+        return tr("bar %1").arg(position.bar + FIRST_BAR_NUMBER);
+    return tr("bar %1, beat %2").arg(position.bar + FIRST_BAR_NUMBER).arg(QLocale().toString(beat, 'g', 4));
+}
+
+// Shows a position in the start bar and beat fields, without changing the start.
+void GuiLoopingPopup::showStart(const CBarPosition &start)
+{
+    // rounded down so that typing the shown value again also starts before the notes
+    const double beat = std::floor((m_song->beatOfPosition(start) + 1.0) * 100.0 + 1e-6) / 100.0;
+    const QSignalBlocker blockBar(startBarSpin);
+    const QSignalBlocker blockBeat(startBeatSpin);
+    startBarSpin->setValue(start.bar + FIRST_BAR_NUMBER);
+    startBeatSpin->setValue(beat);
+}
+
+void GuiLoopingPopup::on_startBarSpin_valueChanged(int bar)
+{
+    Q_UNUSED(bar)
+    startEdited();
+}
+
+void GuiLoopingPopup::on_startBeatSpin_valueChanged(double beat)
+{
+    Q_UNUSED(beat)
+    startEdited();
+}
+
+// The user has typed a start bar or beat
+void GuiLoopingPopup::startEdited()
+{
+    if (!m_song) return;
+    // the beat is shown counting from 1; round down so the start is never after the notes
+    m_song->setPlayFrom(m_song->positionFromBarBeat(startBarSpin->value() - FIRST_BAR_NUMBER, startBeatSpin->value() - 1.0));
+    updateInfo();
+}
+
+// Use the exact position of the current notes as the start, so that playing starts on them
+void GuiLoopingPopup::on_startHereButton_clicked(bool clicked)
+{
+    Q_UNUSED(clicked)
+    if (!m_song) return;
+    const CBarPosition start = m_song->getCurrentNotePosition();
+    showStart(start);
+    m_song->setPlayFrom(start);
     updateInfo();
 }
 
@@ -121,17 +177,15 @@ void GuiLoopingPopup::updateInfo()
     else if (!m_song->isLoopActive())
         loopingText->setText(tr("The end must be after the start bar"));
     else
-    {
-        const CBarPosition start = m_song->getPlayFrom();
-        const double startBeat = std::floor((m_song->beatOfPosition(start) + 1.0) * 100.0) / 100.0;
-        loopingText->setText(tr("Repeats from bar %1, beat %2").arg(start.bar + FIRST_BAR_NUMBER).arg(QLocale().toString(startBeat, 'g', 4)));
-    }
+        loopingText->setText(tr("Repeats from %1 to %2").arg(positionText(m_song, m_song->getPlayFrom(), false),
+                                                            positionText(m_song, m_song->getPlayUpto(), true)));
+    emit sectionChanged();
 }
 
 void GuiLoopingPopup::closeEvent(QCloseEvent *event)
 {
     Q_UNUSED(event)
-    QPushButton* parent = static_cast<QPushButton*> (parentWidget());
+    auto *parent = qobject_cast<QAbstractButton*>(parentWidget());
     if (parent)
         parent->setChecked(false);
 }

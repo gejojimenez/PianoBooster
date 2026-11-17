@@ -703,17 +703,43 @@ void QtWindow::songLoaded(const QString &fileName)
 
 void QtWindow::readSettings()
 {
-    QPoint pos = m_settings->value("Window/Pos", QPoint(25, 25)).toPoint();
-    QSize size = m_settings->value("Window/Size", QSize(1200, 800)).toSize();
-    resize(size);
-    move(pos);
+    // The window is shown maximized (see main()); this is the size and position it
+    // has when it is restored down.
+    const QRect normal = m_settings->value("Window/NormalGeometry").toRect();
+    if (normal.isValid() && QGuiApplication::screenAt(normal.center()))
+        setGeometry(normal);
+    else
+    {
+        // settings saved by an older version, or the screen has changed
+        QPoint pos = m_settings->value("Window/Pos", QPoint(25, 25)).toPoint();
+        QSize size = m_settings->value("Window/Size", QSize(1200, 800)).toSize();
+        resize(size);
+        move(pos);
+    }
+    m_normalGeometry = geometry();
 }
 
 void QtWindow::writeSettings()
 {
-    m_settings->setValue("Window/Pos", pos());
-    m_settings->setValue("Window/Size", size());
+    // the size and position when the window is not maximized
+    m_settings->setValue("Window/NormalGeometry", m_normalGeometry);
     m_settings->writeSettings();
+}
+
+// Keep the size and position of the window when it is not maximized: Qt has no
+// valid normal geometry for a window that has only been shown maximized.
+void QtWindow::moveEvent(QMoveEvent *event)
+{
+    if (isVisible() && windowState() == Qt::WindowNoState)
+        m_normalGeometry = geometry();
+    QMainWindow::moveEvent(event);
+}
+
+void QtWindow::resizeEvent(QResizeEvent *event)
+{
+    if (isVisible() && windowState() == Qt::WindowNoState)
+        m_normalGeometry = geometry();
+    QMainWindow::resizeEvent(event);
 }
 
 void QtWindow::closeEvent(QCloseEvent *event)

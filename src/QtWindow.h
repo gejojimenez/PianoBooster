@@ -174,6 +174,8 @@ private slots:
 
 protected:
     void closeEvent(QCloseEvent *event);
+    void moveEvent(QMoveEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     void keyPressEvent ( QKeyEvent * event );
     void keyReleaseEvent ( QKeyEvent * event );
 
@@ -197,6 +199,7 @@ private:
 
     CSettings* m_settings;
     CLibrary* m_library;
+    QRect m_normalGeometry; // the window size and position when not maximized
 
     GuiSidePanel *m_sidePanel;
     GuiTopBar *m_topBar;

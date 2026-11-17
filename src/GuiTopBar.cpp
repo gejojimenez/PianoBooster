@@ -57,6 +57,7 @@ GuiTopBar::GuiTopBar(QWidget *parent, CSettings* settings)
 
     majorCombo->addItem(tr("Major"));
     majorCombo->addItem(tr("Minor"));
+    loopingBarsPopupButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     setMaximumHeight(30);
     setMaximumSize(QSize(16777215, 30));
 }
@@ -74,9 +75,8 @@ void GuiTopBar::refresh(bool reset)
         majorCombo->setCurrentIndex(0);
         reloadKeyCombo(true);
         transposeSpin->setValue(0);
-        startBarSpin->setValue(FIRST_BAR_NUMBER);
-        startBeatSpin->setValue(1.0);
     }
+    updateSectionSummary();
     int index = 0;
     if (m_song)
         index = CStavePos::getKeySignature() + 6;
@@ -241,29 +241,6 @@ void GuiTopBar::on_speedSpin_valueChanged(int speed)
     m_song->setSpeed(static_cast<float>(speed) / 100.0f);
 }
 
-void GuiTopBar::on_startBarSpin_valueChanged(int bar)
-{
-    Q_UNUSED(bar)
-    startPositionEdited();
-}
-
-void GuiTopBar::on_startBeatSpin_valueChanged(double beat)
-{
-    Q_UNUSED(beat)
-    startPositionEdited();
-}
-
-// The user has typed a start bar or beat
-void GuiTopBar::startPositionEdited()
-{
-    if (!m_song) return;
-
-    stopMuiscPlaying();
-
-    // the beat is shown counting from 1, but positions count beats from 0
-    m_song->setPlayFrom(m_song->positionFromBarBeat(startBarSpin->value() - FIRST_BAR_NUMBER, startBeatSpin->value() - 1.0));
-}
-
 // Stop the muisc playing
 void GuiTopBar::stopMuiscPlaying()
 {
@@ -271,26 +248,6 @@ void GuiTopBar::stopMuiscPlaying()
 
     m_song->playMusic(false);
     setPlayButtonState(false);
-}
-
-void GuiTopBar::on_saveBarButton_clicked(bool clicked)
-{
-    Q_UNUSED(clicked)
-    if (!m_song) return;
-
-    // Use the exact position of the current notes, so that playing starts on them.
-    const CBarPosition position = m_song->getCurrentNotePosition();
-
-    // Only display it: rounding the beat to two decimals could move it past the notes.
-    // It is rounded down so that typing the shown value again also starts before them.
-    const double beat = std::floor((m_song->beatOfPosition(position) + 1.0) * 100.0) / 100.0;
-    const QSignalBlocker blockBar(startBarSpin);
-    const QSignalBlocker blockBeat(startBeatSpin);
-    startBarSpin->setValue(position.bar + FIRST_BAR_NUMBER);
-    startBeatSpin->setValue(beat);
-
-    stopMuiscPlaying();
-    m_song->setPlayFrom(position);
 }
 
 void GuiTopBar::on_loopingBarsPopupButton_clicked(bool clicked)
@@ -306,9 +263,36 @@ void GuiTopBar::on_loopingBarsPopupButton_clicked(bool clicked)
     pos.ry() += loopingBarsPopupButton->height() + 2;
     pos.rx() += -5; // Tweak the position slightly
     GuiLoopingPopup *loopingPopup = new GuiLoopingPopup(loopingBarsPopupButton);
+    loopingPopup->setAttribute(Qt::WA_DeleteOnClose);
+    connect(loopingPopup, &GuiLoopingPopup::sectionChanged, this, &GuiTopBar::updateSectionSummary);
     loopingPopup->init(m_song);
+    // keep it on the screen: the button is near the right side of the window
+    loopingPopup->adjustSize();
+    if (const QScreen *screen = QGuiApplication::screenAt(pos))
+    {
+        const QRect available = screen->availableGeometry();
+        pos.setX(qMax(available.left(), qMin(pos.x(), available.right() - loopingPopup->width())));
+    }
     loopingPopup->move (pos);
     loopingPopup->show();
+}
+
+// Shows the start and the end of the repeated section on the button that opens the popup
+void GuiTopBar::updateSectionSummary()
+{
+    QString text = tr("Start / Repeat");
+    if (m_song)
+    {
+        const CBarPosition start = m_song->getPlayFrom();
+        const QString startText = GuiLoopingPopup::positionText(m_song, start, false);
+        if (m_song->isLoopActive())
+            text = startText + QString::fromUtf8(" → ") +
+                   GuiLoopingPopup::positionText(m_song, m_song->getPlayUpto(), true) + QString::fromUtf8(" ↻");
+        else if (!start.isSongStart())
+            text = tr("From %1").arg(startText);
+    }
+    loopingBarsPopupButton->setText(text);
+    loopingBarsPopupButton->setToolTip(tr("Start position and repeated section"));
 }
 
 bool GuiTopBar::eventFilter(QObject *obj, QEvent *event)

@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
 
     QApplication app(argc, argv);
     QtWindow window;
-    window.show();
+    window.showMaximized(); // the saved size and position are used when it is restored down
 
     int value = app.exec();
     closeLogs();

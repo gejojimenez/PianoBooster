@@ -45,7 +45,16 @@ public:
     GuiLoopingPopup(QWidget *parent = 0);
     void init(CSong* song);
 
+    // A position as text for the user, e.g. "bar 12, beat 2.5"
+    static QString positionText(CSong *song, const CBarPosition &position, bool roundUp);
+
+signals:
+    void sectionChanged(); // the start or the repeated section has changed
+
 private slots:
+    void on_startBarSpin_valueChanged(int bar);
+    void on_startBeatSpin_valueChanged(double beat);
+    void on_startHereButton_clicked(bool clicked);
     void on_loopCheck_toggled(bool checked);
     void on_endBarSpin_valueChanged(int bar);
     void on_endBeatSpin_valueChanged(double beat);
@@ -53,6 +62,8 @@ private slots:
     void closeEvent(QCloseEvent *event);
 
 private:
+    void showStart(const CBarPosition &start);
+    void startEdited();
     void showEnd(const CBarPosition &end);
     void endEdited();
     void applyLoop();
