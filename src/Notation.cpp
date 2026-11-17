@@ -106,17 +106,53 @@ CSlot CNotation::nextBeatMarker()
 
     CSlot slot;
 
-    m_beatPerBarCounter++;
+    // the bar marker at the start of a bar, just after its bar line
+    if (m_pendingBarMarker)
+    {
+        m_pendingBarMarker = false;
+        slot.setSymbol(m_pendingBarMarkerTime - m_markerEmitTime, CSymbol( PB_SYMBOL_barMarker, PB_PART_both, 0 ));
+        m_markerEmitTime = m_pendingBarMarkerTime;
+        return slot;
+    }
 
-    if (m_beatPerBarCounter >= m_bar.getTimeSigTop())
-        m_beatPerBarCounter = -1;
+    // Use the time signature of the beat that is starting; a new time signature
+    // always starts a new bar.
+    while (!m_markerTimeSigChanges.empty() && m_markerTimeSigChanges.front().time <= m_beatStartTime)
+    {
+        const TimeSigChange &change = m_markerTimeSigChanges.front();
+        m_markerTimeSigTop = (change.top > 0) ? change.top : 4;
+        m_markerTimeSigBottom = (change.bottom > 0) ? change.bottom : 4;
+        m_beatPerBarCounter = 0;
+        m_markerTimeSigChanges.pop_front();
+    }
 
-    if (m_beatPerBarCounter == -1)    // Sneak in a bar line
-        slot.setSymbol( m_bar.getBeatLength() - cfg_barGap, CSymbol( PB_SYMBOL_barLine, PB_PART_both, 0 ));
-    else if (m_beatPerBarCounter == 0)
-        slot.setSymbol( cfg_barGap, CSymbol( PB_SYMBOL_barMarker, PB_PART_both, 0 ));
+    const qint64 beatLength = (CMidiFile::getPulsesPerQuarterNote() * 4) / m_markerTimeSigBottom;
+    qint64 nextBeatTime = m_beatStartTime + beatLength;
+    bool newBar = (m_beatPerBarCounter + 1 >= m_markerTimeSigTop);
+    // a time signature change within this beat ends the bar there
+    if (!m_markerTimeSigChanges.empty() && m_markerTimeSigChanges.front().time <= nextBeatTime)
+    {
+        nextBeatTime = m_markerTimeSigChanges.front().time;
+        newBar = true;
+    }
+    m_beatStartTime = nextBeatTime;
+
+    if (newBar)
+    {
+        // Sneak in a bar line just before the bar starts, followed by the bar marker
+        m_beatPerBarCounter = 0;
+        const qint64 barLineTime = nextBeatTime - qMin<qint64>(cfg_barGap, (nextBeatTime - m_markerEmitTime) / 2);
+        slot.setSymbol(barLineTime - m_markerEmitTime, CSymbol( PB_SYMBOL_barLine, PB_PART_both, 0 ));
+        m_markerEmitTime = barLineTime;
+        m_pendingBarMarker = true;
+        m_pendingBarMarkerTime = nextBeatTime;
+    }
     else
-        slot.setSymbol( m_bar.getBeatLength(), CSymbol( PB_SYMBOL_beatMarker, PB_PART_both, 0 ));
+    {
+        m_beatPerBarCounter++;
+        slot.setSymbol(nextBeatTime - m_markerEmitTime, CSymbol( PB_SYMBOL_beatMarker, PB_PART_both, 0 ));
+        m_markerEmitTime = nextBeatTime;
+    }
     return slot;
 }
 
@@ -249,6 +285,7 @@ void CNotation::findNoteSlots()
         midi = m_midiInputQueue->pop();
 
         m_currentDeltaTime += midi.deltaTime();
+        m_noteStreamTime += midi.deltaTime();
         m_earlyBarChangeDelta += midi.deltaTime();
         if (midi.type() == MIDI_PB_chordSeparator || midi.type() == MIDI_PB_EOF)
         {
@@ -268,7 +305,11 @@ void CNotation::findNoteSlots()
         }
 
         else if (midi.type() == MIDI_PB_timeSignature)
+        {
             m_bar.setTimeSig(midi.data1(), midi.data2());
+            // the beat markers use it once they reach this time
+            m_markerTimeSigChanges.push_back({ m_noteStreamTime, midi.data1(), midi.data2() });
+        }
         else if (midi.type() == MIDI_PB_keySignature)
             CStavePos::setKeySignature(midi.data1(), midi.data2());
         else if (midi.type() == MIDI_NOTE_ON)
@@ -370,6 +411,14 @@ void CNotation::reset()
         slot.clear();
     m_currentSlot.clear();
     m_beatPerBarCounter=0;
+    m_noteStreamTime = 0;
+    m_markerTimeSigChanges.clear();
+    m_markerTimeSigTop = 4;
+    m_markerTimeSigBottom = 4;
+    m_beatStartTime = 0;
+    m_markerEmitTime = 0;
+    m_pendingBarMarker = false;
+    m_pendingBarMarkerTime = 0;
     m_earlyBarChangeCounter = 0;
     m_earlyBarChangeDelta = cfg_earlBarLead; // We want to detect the bar change early
 

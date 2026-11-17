@@ -30,6 +30,7 @@
 #define __NOTATION_H__
 
 #include <cassert>
+#include <deque>
 
 #include "MidiFile.h"
 #include "Queue.h"
@@ -210,7 +211,19 @@ private:
     CQueue<CMidiEvent>* m_midiInputQueue;   // A Queue of midi events
     CSlot m_currentSlot;
     qint64 m_currentDeltaTime;        // time difference between this and the previous slot
-    int m_beatPerBarCounter;
+    qint64 m_noteStreamTime;          // absolute time of the midi events read so far
+
+    // The beat markers and bar lines are generated separately from the notes, which are read
+    // ahead, so time signature changes are kept here until the markers reach their time.
+    struct TimeSigChange { qint64 time; int top; int bottom; };
+    std::deque<TimeSigChange> m_markerTimeSigChanges;
+    int m_markerTimeSigTop;           // the time signature used by the beat markers
+    int m_markerTimeSigBottom;
+    qint64 m_beatStartTime;           // absolute time of the start of the current beat
+    qint64 m_markerEmitTime;          // absolute time of the last beat marker returned
+    bool m_pendingBarMarker;          // a bar marker follows the bar line just returned
+    qint64 m_pendingBarMarkerTime;
+    int m_beatPerBarCounter;          // the current beat in the bar, counting from 0
     int m_earlyBarChangeCounter;
     qint64 m_earlyBarChangeDelta; // Counts the ppqn in one bar
     CSlot m_mergeSlots[2];
