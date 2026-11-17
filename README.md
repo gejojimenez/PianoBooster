@@ -26,6 +26,17 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
     keyboard count as user activity (Windows only for now; Linux and macOS are planned).
   * The version is shown in the window title, and is defined as `MAJOR.MINOR.PATCH`
     in [`src/version.h`](src/version.h).
+* **1.0.3 – Exact start and end of the played section**
+  * The start is set as a bar and a beat (e.g. bar 12, beat 2.5) and playing starts
+    exactly on the intended note; it used to start one or two notes before or after it.
+  * The flag button stores the exact position of the notes you are being waited for.
+  * The end of the repeated section is an exact end bar and beat (instead of a number of
+    bars), includes the notes at that position, and can also be set with a flag button.
+* **1.0.4**
+  * Fixed the bar lines in the score when the time signature changes (e.g. from 4/4 to 12/8).
+* **1.0.5**
+  * The bar numbers are shown in the score, and bars are numbered from 1 everywhere,
+    like in printed music.
 
 ## Building
 
