@@ -39,6 +39,7 @@
 #include "GuiSongDetailsDialog.h"
 #include "GuiLoopingPopup.h"
 #include "Settings.h"
+#include "Library.h"
 
 class CGLView;
 class QAction;
@@ -76,9 +77,12 @@ public:
 
     void loadTutorHtml(const QString & name);
     void setCurrentFile(const QString &fileName);
+    // called by CSettings when a song has been loaded
+    void songLoaded(const QString &fileName);
 
 private slots:
     void open();
+    void openLibrary();
     void help();
     void website();
     void about();
@@ -192,6 +196,7 @@ private:
     void writeSettings();
 
     CSettings* m_settings;
+    CLibrary* m_library;
 
     GuiSidePanel *m_sidePanel;
     GuiTopBar *m_topBar;
@@ -206,6 +211,7 @@ private:
 
     CGLView *m_glWidget;
     QAction *m_openAct;
+    QAction *m_libraryAct;
     QAction *m_exitAct;
     QAction *m_aboutAct;
     QAction *m_shortcutAct;

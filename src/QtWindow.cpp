@@ -27,6 +27,8 @@
 #include "GlView.h"
 #include "QtWindow.h"
 #include "version.h"
+#include "GuiLibraryDialog.h"
+#include "MidiInfo.h"
 
 #include <QDebug>
 #include <QSurfaceFormat>
@@ -59,8 +61,9 @@ static int set_realtime_priority(int policy, int prio)
 QtWindow::QtWindow()
 {
     m_settings = new CSettings(this);
+    m_library = new CLibrary(QFileInfo(m_settings->fileName()).absolutePath());
     setWindowIcon(QIcon(":/images/pianobooster.png"));
-    setWindowTitle(tr("Piano Booster") + QStringLiteral(" " PB_VERSION));
+    setWindowTitle(QStringLiteral("Piano Booster " PB_VERSION)); // the name is not translated
 
     Cfg::setDefaults();
 
@@ -100,6 +103,7 @@ QtWindow::QtWindow()
     QVBoxLayout *columnLayout = new QVBoxLayout;
 
     m_sidePanel = new GuiSidePanel(this, m_settings);
+    connect(m_sidePanel, &GuiSidePanel::libraryRequested, this, &QtWindow::openLibrary);
     m_topBar = new GuiTopBar(this, m_settings);
     m_tutorWindow = new QTextBrowser(this);
     m_tutorWindow->hide();
@@ -159,6 +163,7 @@ void QtWindow::init()
 
 QtWindow::~QtWindow()
 {
+    delete m_library;
     delete m_settings;
 }
 
@@ -325,6 +330,11 @@ void QtWindow::createActions()
     m_openAct->setToolTip(tr("Open an existing file"));
     connect(m_openAct, SIGNAL(triggered()), this, SLOT(open()));
 
+    m_libraryAct = new QAction(QIcon(":/images/open.png"), tr("&Library..."), this);
+    m_libraryAct->setShortcut(tr("Ctrl+B"));
+    m_libraryAct->setToolTip(tr("Choose a song from the library: favourites, recent songs and your folders"));
+    connect(m_libraryAct, SIGNAL(triggered()), this, SLOT(openLibrary()));
+
     m_exitAct = new QAction(tr("E&xit"), this);
     m_exitAct->setShortcut(tr("Ctrl+Q"));
     m_exitAct->setToolTip(tr("Exit the application"));
@@ -415,6 +425,7 @@ void QtWindow::createMenus()
     m_fileMenu = menuBar()->addMenu(tr("&File"));
     m_fileMenu->setToolTipsVisible(true);
     m_fileMenu->addAction(m_openAct);
+    m_fileMenu->addAction(m_libraryAct);
     m_separatorAct = m_fileMenu->addSeparator();
     for (int i = 0; i < maxRecentFiles(); ++i)
        m_fileMenu->addAction(m_recentFileActs[i]);
@@ -656,6 +667,38 @@ void QtWindow::open()
     }
     m_song->flushMidiInput();
     m_glWidget->startTimerEvent();
+}
+
+void QtWindow::openLibrary()
+{
+    m_topBar->stopMuiscPlaying();
+    m_glWidget->stopTimerEvent();
+
+    // the first time, start the library with the Booster Music course
+    if (!m_settings->value("Library/Initialised", false).toBool())
+    {
+        const QString books = CSettings::boosterMusicBooksFolder();
+        if (QDir(books).exists())
+            m_library->addLocation(books);
+        m_settings->setValue("Library/Initialised", true);
+    }
+
+    GuiLibraryDialog library(m_library, m_settings->getCurrentSongLongFileName(), this);
+    if (library.exec() == QDialog::Accepted && !library.selectedSong().isEmpty())
+    {
+        m_settings->openSongFile(library.selectedSong());
+        setCurrentFile(library.selectedSong());
+    }
+    m_song->flushMidiInput();
+    m_glWidget->startTimerEvent();
+}
+
+void QtWindow::songLoaded(const QString &fileName)
+{
+    const CMidiInfo info = CMidiInfo::read(fileName);
+    m_library->songOpened(fileName, info);
+    m_sidePanel->setSongInfo(m_song->getSongTitle(), fileName, info);
+    setWindowTitle(QStringLiteral("Piano Booster " PB_VERSION " - ") + m_song->getSongTitle());
 }
 
 void QtWindow::readSettings()

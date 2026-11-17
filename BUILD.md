@@ -2,8 +2,11 @@
 
 Ensure that the following packages are installed:
 
-- For Qt5: `build-essential`, `cmake`, `pkg-config`, `libftgl-dev`, `qtbase5-dev`, `qttools5-dev`, `librtmidi-dev` , `libfluidsynth-dev`, `fluid-soundfont-gm`
-- For Qt6: `build-essential`, `cmake`, `pkg-config`, `libftgl-dev`, `qt6-base-dev`, `libqt6core5compat6-dev`, `qt6-tools-dev`, `qt6-tools-dev-tools`, `qt6-l10n-tools`, `librtmidi-dev` , `libfluidsynth-dev`, `fluid-soundfont-gm`
+- For Qt5: `build-essential`, `cmake`, `pkg-config`, `libftgl-dev`, `qtbase5-dev`, `qttools5-dev`, `libqt5sql5-sqlite`, `librtmidi-dev` , `libfluidsynth-dev`, `fluid-soundfont-gm`
+- For Qt6: `build-essential`, `cmake`, `pkg-config`, `libftgl-dev`, `qt6-base-dev`, `libqt6core5compat6-dev`, `qt6-tools-dev`, `qt6-tools-dev-tools`, `qt6-l10n-tools`, `libqt6sql6-sqlite`, `librtmidi-dev` , `libfluidsynth-dev`, `fluid-soundfont-gm`
+
+(The `sqlite` packages provide the SQLite driver used by the song library; the package
+names are those of Debian and Ubuntu.)
 
 
 To generate a project makefile using CMake, create a build folder

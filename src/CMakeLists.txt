@@ -75,8 +75,8 @@ endif()
 
 # Finds Qt libraries
 set(QT_PACKAGE_NAME Qt5 CACHE STRING "Name of the Qt package to use, set e.g. to \"Qt6\" to use Qt 6")
-set(QT_COMPONENTS Core Gui Widgets LinguistTools OpenGL Xml)
-set(QT_LIBS ${QT_PACKAGE_NAME}::Core ${QT_PACKAGE_NAME}::Gui ${QT_PACKAGE_NAME}::Widgets ${QT_PACKAGE_NAME}::Xml ${QT_PACKAGE_NAME}::OpenGL)
+set(QT_COMPONENTS Core Gui Widgets LinguistTools OpenGL Xml Sql)
+set(QT_LIBS ${QT_PACKAGE_NAME}::Core ${QT_PACKAGE_NAME}::Gui ${QT_PACKAGE_NAME}::Widgets ${QT_PACKAGE_NAME}::Xml ${QT_PACKAGE_NAME}::OpenGL ${QT_PACKAGE_NAME}::Sql)
 if (QT_PACKAGE_NAME STREQUAL Qt6)
     list(APPEND QT_COMPONENTS OpenGLWidgets Core5Compat)
     list(APPEND QT_LIBS ${QT_PACKAGE_NAME}::OpenGLWidgets ${QT_PACKAGE_NAME}::Core5Compat)
@@ -173,6 +173,9 @@ SET( PIANOBOOSTER_SRCS
     GuiPreferencesDialog.cpp
     GuiSongDetailsDialog.cpp
     GuiLoopingPopup.cpp
+    GuiLibraryDialog.cpp
+    Library.cpp
+    MidiInfo.cpp
     GlView.cpp
     ${PB_BASE_SRCS}
     StavePosition.cpp

@@ -1158,6 +1158,10 @@
 </context>
 <context>
     <name>GuiSidePanel</name>
+    <message><source>Library...</source><translation>Biblioteca...</translation></message>
+    <message><source>Choose a song from the library: favourites, recent songs and your folders</source><translation>Elegir una canción de la biblioteca: favoritas, recientes y tus carpetas</translation></message>
+    <message><source>No song</source><translation>Ninguna canción</translation></message>
+    <message numerus="yes"><source>%n bar(s)</source><translation><numerusform>%n compás</numerusform><numerusform>%n compases</numerusform></translation></message>
     <message>
         <location filename="../src/GuiSidePanel.ui" line="20"/>
         <source>Form</source>
@@ -1554,6 +1558,9 @@
 </context>
 <context>
     <name>QtWindow</name>
+    <message><source>&amp;Library...</source><translation>&amp;Biblioteca...</translation></message>
+    <message><source>Ctrl+B</source><translation>Ctrl+B</translation></message>
+    <message><source>Choose a song from the library: favourites, recent songs and your folders</source><translation>Elegir una canción de la biblioteca: favoritas, recientes y tus carpetas</translation></message>
     <message>
         <location filename="../src/QtWindow.cpp" line="59"/>
         <source>Piano Booster</source>
@@ -1989,5 +1996,49 @@
         <source>MIDI Files</source>
         <translation>Archivos MIDI</translation>
     </message>
+</context>
+<context>
+    <name>CMidiInfo</name>
+    <message><source>C</source><translation>Do</translation></message>
+    <message><source>D</source><translation>Re</translation></message>
+    <message><source>E</source><translation>Mi</translation></message>
+    <message><source>F</source><translation>Fa</translation></message>
+    <message><source>G</source><translation>Sol</translation></message>
+    <message><source>A</source><translation>La</translation></message>
+    <message><source>B</source><translation>Si</translation></message>
+    <message><source>%1 major</source><translation>%1 mayor</translation></message>
+    <message><source>%1 minor</source><translation>%1 menor</translation></message>
+    <message><source>(changes)</source><translation>(cambia)</translation></message>
+    <message><source>%1 BPM</source><translation>%1 BPM</translation></message>
+</context>
+<context>
+    <name>GuiLibraryDialog</name>
+    <message><source>Library</source><translation>Biblioteca</translation></message>
+    <message><source>Add Location...</source><translation>Añadir ubicación...</translation></message>
+    <message><source>Add a folder with MIDI files to the library</source><translation>Añadir a la biblioteca una carpeta con archivos MIDI</translation></message>
+    <message><source>Remove</source><translation>Quitar</translation></message>
+    <message><source>Remove the selected location from the library (the files are not deleted)</source><translation>Quitar de la biblioteca la ubicación seleccionada (los archivos no se borran)</translation></message>
+    <message><source>Search...</source><translation>Buscar...</translation></message>
+    <message><source>Name</source><translation>Nombre</translation></message>
+    <message><source>Folder</source><translation>Carpeta</translation></message>
+    <message><source>Duration</source><translation>Duración</translation></message>
+    <message><source>Bars</source><translation>Compases</translation></message>
+    <message><source>Time Sig.</source><translation>Compás</translation></message>
+    <message><source>Last Opened</source><translation>Última vez</translation></message>
+    <message><source>Times</source><translation>Veces</translation></message>
+    <message><source>Favourite (click a star to change it)</source><translation>Favorita (haz clic en una estrella para cambiarla)</translation></message>
+    <message><source>Open</source><translation>Abrir</translation></message>
+    <message><source>Close</source><translation>Cerrar</translation></message>
+    <message><source>Favourites</source><translation>Favoritas</translation></message>
+    <message><source>Recent</source><translation>Recientes</translation></message>
+    <message><source>Locations</source><translation>Ubicaciones</translation></message>
+    <message><source>Not found: %1</source><translation>No encontrada: %1</translation></message>
+    <message><source>Add a Folder with MIDI Files</source><translation>Añadir una carpeta con archivos MIDI</translation></message>
+    <message><source>Remove Location</source><translation>Quitar ubicación</translation></message>
+    <message><source>Remove "%1" from the library?
+
+The files are not deleted, and the songs keep their favourites and statistics.</source><translation>¿Quitar «%1» de la biblioteca?
+
+Los archivos no se borran, y las canciones conservan sus favoritas y estadísticas.</translation></message>
 </context>
 </TS>

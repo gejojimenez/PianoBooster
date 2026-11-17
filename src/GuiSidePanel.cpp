@@ -42,6 +42,61 @@ GuiSidePanel::GuiSidePanel(QWidget *parent, CSettings* settings)
     m_topBar = nullptr;
     m_settings = settings;
     setupUi(this);
+
+    // The song header replaces the book and song lists, which stay hidden because
+    // the next/previous song and book shortcuts still use them.
+    for (QWidget *widget : { static_cast<QWidget*>(label), static_cast<QWidget*>(bookCombo),
+                             static_cast<QWidget*>(label_2), static_cast<QWidget*>(songCombo) })
+        widget->hide();
+
+    m_songTitleLabel = new QLabel;
+    QFont titleFont = m_songTitleLabel->font();
+    titleFont.setBold(true);
+    titleFont.setPointSizeF(titleFont.pointSizeF() * 1.15);
+    m_songTitleLabel->setFont(titleFont);
+    m_songTitleLabel->setWordWrap(true);
+    m_songFolderLabel = new QLabel;
+    m_songInfoLabel = new QLabel;
+    m_songInfoLabel->setWordWrap(true);
+    m_libraryButton = new QPushButton(tr("Library..."));
+    m_libraryButton->setToolTip(tr("Choose a song from the library: favourites, recent songs and your folders"));
+    connect(m_libraryButton, &QPushButton::clicked, this, &GuiSidePanel::libraryRequested);
+
+    auto *headerLayout = new QVBoxLayout;
+    headerLayout->setContentsMargins(0, 0, 0, 4);
+    headerLayout->addWidget(m_songTitleLabel);
+    headerLayout->addWidget(m_songFolderLabel);
+    headerLayout->addWidget(m_songInfoLabel);
+    headerLayout->addWidget(m_libraryButton);
+    if (auto *mainLayout = qobject_cast<QBoxLayout*>(layout()))
+        mainLayout->insertLayout(0, headerLayout);
+
+    setSongInfo(QString(), QString(), CMidiInfo());
+}
+
+void GuiSidePanel::setSongInfo(const QString &title, const QString &fileName, const CMidiInfo &info)
+{
+    m_songTitle = title;
+    m_songFileName = fileName;
+    m_songInfo = info;
+    m_songTitleLabel->setText(fileName.isEmpty() ? tr("No song") : title);
+
+    const QFileInfo file(fileName);
+    m_songFolderLabel->setText(fileName.isEmpty() ? QString() : QString::fromUtf8("\U0001F4C1 ") + file.dir().dirName());
+    m_songFolderLabel->setToolTip(QDir::toNativeSeparators(fileName));
+    m_songTitleLabel->setToolTip(QDir::toNativeSeparators(fileName));
+
+    if (!info.valid)
+    {
+        m_songInfoLabel->clear();
+        return;
+    }
+    QStringList first = { info.timeSigText() };
+    if (!info.keyText().isEmpty())
+        first << info.keyText();
+    first << info.tempoText();
+    const QString second = info.durationText() + QString::fromUtf8(" · ") + tr("%n bar(s)", nullptr, info.bars);
+    m_songInfoLabel->setText(first.join(QString::fromUtf8(" · ")) + "\n" + second);
 }
 
 void GuiSidePanel::init(CSong* songObj, CTrackList* trackList, GuiTopBar* topBar)
@@ -271,6 +326,11 @@ void GuiSidePanel::updateTranslate(){
     rhythmTappingCombo->setItemText(1,tr("Melody"));
 
     retranslateUi(this);
+
+    // the song header, which is not in the .ui file
+    m_libraryButton->setText(tr("Library..."));
+    m_libraryButton->setToolTip(tr("Choose a song from the library: favourites, recent songs and your folders"));
+    setSongInfo(m_songTitle, m_songFileName, m_songInfo); // its tooltips were reset above
 
     // ---  smart resize panel  --- //
     int maxDeltaWidth=0;

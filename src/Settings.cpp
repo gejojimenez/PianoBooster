@@ -407,6 +407,18 @@ void CSettings::loadSettings()
 
 }
 
+QString CSettings::boosterMusicBooksFolder()
+{
+#ifdef _WIN32
+    QSettings settings(QSettings::UserScope, "Microsoft", "Windows");
+    settings.beginGroup("CurrentVersion/Explorer/Shell Folders");
+    const QString musicDir = QDir::fromNativeSeparators(settings.value("Personal").toString()) + "/My Music";
+#else
+    const QString musicDir = QDir::homePath() + "/Music";
+#endif
+    return musicDir + "/BoosterMusicBooks" + QString::number(MUSIC_RELEASE);
+}
+
 void CSettings::unzipBoosterMusicBooks()
 {
     // Set default value
@@ -500,7 +512,7 @@ void CSettings::setCurrentSongName(const QString & name)
 
     m_guiSidePanel->refresh();
     m_guiTopBar->refresh(true);
-    m_mainWindow->setWindowTitle("Piano Booster - " + m_song->getSongTitle());
+    m_mainWindow->songLoaded(getCurrentSongLongFileName()); // title, song details and library
     updateTutorPage();
 }
 

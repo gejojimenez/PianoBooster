@@ -41,6 +41,10 @@ cp "$SRC_DIR/README.md" "$SRC_DIR/license.txt" "$SRC_DIR/gplv3.txt" "$SRC_DIR/Ch
 # Qt libraries and plugins (platform, styles, image formats...)
 "$MSYS_BIN/windeployqt6.exe" --release --no-compiler-runtime "$OUT_DIR/pianobooster.exe"
 
+# Only the SQLite database driver is used (by the song library); the others would
+# pull in the client libraries of other databases.
+find "$OUT_DIR/sqldrivers" -name '*.dll' ! -name 'qsqlite.dll' -delete 2>/dev/null || true
+
 # Every other DLL coming from MSYS2 (FluidSynth, FTGL, GCC runtime...), for the
 # executable and for the Qt plugins; repeat until no new dependency appears.
 while true; do

@@ -95,6 +95,8 @@ public:
     void writeSettings();
     void loadSettings();
     void unzipBoosterMusicBooks();
+    // the folder where the Booster Music course is unzipped
+    static QString boosterMusicBooksFolder();
     QString getCurrentSongLongFileName()
     {
         if (getCurrentSongName().isEmpty())

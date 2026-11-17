@@ -35,6 +35,7 @@
 #include "Score.h"
 #include "TrackList.h"
 #include "Settings.h"
+#include "MidiInfo.h"
 
 #include "ui_GuiSidePanel.h"
 
@@ -59,6 +60,14 @@ public:
     void setCurrentHand(const QString &hand);
 
     bool isRepeatSong(){return repeatSong->isChecked();}
+
+    // shows the song name, its folder and its MIDI information in the header
+    void setSongInfo(const QString &title, const QString &fileName, const CMidiInfo &info);
+
+signals:
+    void libraryRequested();
+
+public:
 
     void updateTranslate();
 
@@ -186,6 +195,13 @@ private:
     CTrackList* m_trackList;
     GuiTopBar* m_topBar;
     CSettings* m_settings;
+    QLabel* m_songTitleLabel;   // the song header, in place of the book and song lists
+    QLabel* m_songFolderLabel;
+    QLabel* m_songInfoLabel;
+    QPushButton* m_libraryButton;
+    QString m_songTitle;        // the song shown in the header
+    QString m_songFileName;
+    CMidiInfo m_songInfo;
     QWidget *m_parent;
 };
 
