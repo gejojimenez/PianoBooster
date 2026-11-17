@@ -1,3 +1,18 @@
+1.0.2 (17 Nov 2026)
+- The display no longer turns off while a song is playing, and notes played on the
+  MIDI keyboard count as user activity (Windows only for now).
+- The version is shown in the window title.
+- The version is now defined as three numbers (MAJOR.MINOR.PATCH) in src/version.h.
+
+1.0.1 (17 Nov 2026)
+- Fixed building on Windows with MinGW/MSYS2 (Qt 6, FluidSynth and FTGL found with pkg-config).
+- Raised the minimum CMake version to 3.16, as required by Qt 6 and CMake 4.
+- Added tools/package-windows.sh to create a portable Windows zip with all the required DLLs.
+- Updated the Windows build instructions in BUILD.md for MSYS2.
+- Fixed garbled text in the score area after a message with new characters was shown.
+- Includes the upstream development since 1.0.0: port to Qt 6, switch to QOpenGLWidget,
+  macOS and FluidSynth fixes, new beginner pieces and translation updates.
+
 1.0.0 (13 Dec 2020)
 - Integrated fluidsynth as a build option.
 - Changes necessary for building an AppImage.

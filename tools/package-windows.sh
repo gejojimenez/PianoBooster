@@ -15,7 +15,9 @@ BUILD_DIR="$(cd "${1:-$SRC_DIR/build}" && pwd)"
 BIN_DIR="$BUILD_DIR/build"
 MSYS_BIN="${MINGW_PREFIX:-/ucrt64}/bin"
 
-VERSION="$(grep PB_VERSION "$SRC_DIR/src/version.h" | cut -d '"' -f 2)"
+VERSION="$(for part in MAJOR MINOR PATCH; do
+    awk -v key="PB_VERSION_$part" '$1 == "#define" && $2 == key {print $3}' "$SRC_DIR/src/version.h"
+done | paste -sd. -)"
 NAME="PianoBooster-$VERSION-win64"
 OUT_DIR="$BUILD_DIR/package/$NAME"
 ZIP="$BUILD_DIR/package/$NAME.zip"
