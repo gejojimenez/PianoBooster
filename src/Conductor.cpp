@@ -37,6 +37,7 @@
 #include "Score.h"
 #include "Piano.h"
 #include "Cfg.h"
+#include "KeepDisplayOn.h"
 
 playMode_t CConductor::m_playMode = PB_PLAY_MODE_listen;
 
@@ -80,6 +81,7 @@ CConductor::CConductor()
 
 CConductor::~CConductor()
 {
+    CKeepDisplayOn::setRequired(false);
     delete m_songEventQueue;
     delete m_wantedChordQueue;
     delete m_savedNoteQueue;
@@ -331,6 +333,7 @@ void CConductor::playMusic(bool start)
 {
     reconnectMidi();
     m_playing = start;
+    CKeepDisplayOn::setRequired(start); // don't let the display turn off while a song is playing
     allSoundOff();
     if (start)
     {
@@ -906,7 +909,13 @@ void CConductor::realTimeEngine(qint64 mSecTicks)
         m_pianistTiming += ticks;
 
     while (checkMidiInput() > 0)
-        expandPianistInput(readMidiInput());
+    {
+        CMidiEvent inputEvent = readMidiInput();
+        // the OS does not count the MIDI keyboard as user activity, so tell it
+        if (inputEvent.type() == MIDI_NOTE_ON)
+            CKeepDisplayOn::userActivity();
+        expandPianistInput(inputEvent);
+    }
 
     if (getfollowState() == PB_FOLLOW_waiting )
     {
@@ -980,6 +989,7 @@ void CConductor::realTimeEngine(qint64 mSecTicks)
             ppLogInfo("The End of the song");
             setEventBits(EVENT_BITS_playingStopped);
             m_playing = false;
+            CKeepDisplayOn::setRequired(false);
             break;
         }
 
