@@ -1,3 +1,53 @@
+# ABOUT THIS FORK
+
+This is a fork of [pianobooster/PianoBooster](https://github.com/pianobooster/PianoBooster)
+focused on building and running **PianoBooster** natively on **Windows (64-bit)**, plus some
+small improvements. The original project's README follows below.
+
+## Branches
+
+| Branch | Contents |
+|---|---|
+| [`msys2`](https://github.com/gejojimenez/PianoBooster/tree/msys2) | **This fork's changes**, on top of the original `develop` branch |
+| [`develop`](https://github.com/gejojimenez/PianoBooster/tree/develop) | Unmodified copy of the original project's `develop` branch, kept in sync with it |
+
+## Changes compared to the original project
+
+See [Changelog.txt](Changelog.txt) for the full list, by version.
+
+* **1.0.1 – Windows build**
+  * Builds on Windows with [MSYS2](https://www.msys2.org) (Qt 6, FluidSynth and FTGL included);
+    the Windows section of [BUILD.md](BUILD.md) has been rewritten with step-by-step instructions.
+  * [`tools/package-windows.sh`](tools/package-windows.sh) creates a portable zip with
+    `pianobooster.exe` and all the DLLs it needs, which runs without installing anything.
+  * Fixed garbled text in the score area after some messages were shown.
+* **1.0.2**
+  * The display no longer turns off while a song is playing, and notes played on the MIDI
+    keyboard count as user activity (Windows only for now; Linux and macOS are planned).
+  * The version is shown in the window title, and is defined as `MAJOR.MINOR.PATCH`
+    in [`src/version.h`](src/version.h).
+
+## Building
+
+Follow [BUILD.md](BUILD.md). For Windows the short version, from an **MSYS2 UCRT64** shell
+with the packages listed in BUILD.md installed, is:
+
+```
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DQT_PACKAGE_NAME=Qt6
+cmake --build build
+tools/package-windows.sh   # optional: portable zip in build/package/
+```
+
+The Linux and macOS instructions are unchanged from the original project.
+
+## License
+
+Like the original, this fork is distributed under the GNU General Public License v3 (see the
+LICENSE section below). All changes made in this fork are listed in [Changelog.txt](Changelog.txt)
+and in the history of the `msys2` branch.
+
+---
+
 # == THE URL HAS CHANGED ==
 
 This **PianoBooster** repository has now been transferred to @pianobooster as the new owner.
