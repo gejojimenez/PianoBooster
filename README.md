@@ -47,6 +47,12 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
   * To use the Booster Music course included with PianoBooster on Windows, unzip
     `BoosterMusicBooks.zip` (next to `pianobooster.exe`) anywhere and add the
     `BoosterMusicBooks4` folder to the library.
+* **1.1.1**
+  * The window opens maximized, and keeps its own size for when it is restored down.
+  * The start bar and beat are now in the "Start and Repeat" popup (the button with the
+    arrow in the top bar) together with the end of the repeated section; the button shows
+    a summary such as "bar 12 → bar 14 ↻". The top bar is much narrower, so the window
+    fits on smaller screens.
 
 ## Building
 
