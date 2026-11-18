@@ -61,6 +61,12 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
     sections can also be updated, renamed and deleted. They are kept in the library
     database, so a moved or renamed song keeps them.
   * The side panel scrolls when it does not fit on the screen.
+* **1.2.1 – Songs whose time signature changes**
+  * Starts and ends of sections are now correct in songs whose time signature changes
+    (e.g. 4/4 at the start and 12/8 later). Before, "bar 21, beat 7" in a 12/8 bar was
+    taken as "bar 22, beat 3" while the song was at its 4/4 start.
+  * The beat fields of "Start and Repeat" only go up to the last beat of the bar.
+  * Sections saved before in such songs may need to be set again and updated.
 
 ## Building
 
