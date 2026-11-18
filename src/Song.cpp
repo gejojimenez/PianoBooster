@@ -76,18 +76,22 @@ void CSong::midiFileInfo()
 {
     m_trackList->reset(m_midiFile->numberOfTracks());
     setTimeSig(0,0);
+    clearTimeSigMap();
     CStavePos::setKeySignature( NOT_USED, 0 );
 
-    // Read the next events to find the active channels
+    // Read the next events to find the active channels and the time signatures
     CMidiEvent event;
+    qint64 songTick = 0;
     while ( true )
     {
         event = m_midiFile->readMidiEvent();
         m_trackList->examineMidiEvent(event);
+        songTick += event.deltaTime();
 
         if (event.type() == MIDI_PB_timeSignature)
         {
             setTimeSig(event.data1(),event.data2());
+            addTimeSigChange(songTick, event.data1(), event.data2());
         }
 
         if (event.type() == MIDI_PB_EOF)

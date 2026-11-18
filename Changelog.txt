@@ -1,3 +1,15 @@
+1.2.1 (18 Nov 2026)
+- Songs whose time signature changes (e.g. 4/4 at the start and 12/8 later): the start
+  and end of a section, typed in "Start / Repeat" or saved as a named section, are now
+  worked out with the time signature of their own bar, not with the one being played.
+  Before, typing "bar 21, beat 7" in a 12/8 bar while the song was at its 4/4 start was
+  taken as "bar 22, beat 3".
+  - The time signatures of the whole song are read when it is loaded, and the bars are
+    counted with them.
+  - The beat fields only go up to the last beat of the bar typed (e.g. 4 or 12).
+  - Sections saved before in such songs may be in the wrong place: set them again and
+    press "Update".
+
 1.2.0 (17 Nov 2026)
 - Named sections of a song, to practise them on their own (e.g. "Intro", "Bars 12-16"):
   - Choose one in the new "Section" list of the side panel: it is played from its start

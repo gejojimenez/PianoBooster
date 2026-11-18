@@ -62,6 +62,7 @@ private slots:
     void closeEvent(QCloseEvent *event);
 
 private:
+    void setBeatRange(QDoubleSpinBox *beatSpin, int bar);
     void showStart(const CBarPosition &start);
     void startEdited();
     void showEnd(const CBarPosition &end);

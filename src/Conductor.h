@@ -171,6 +171,10 @@ public:
     void setTimeSig(int top, int bottom) { m_bar.setTimeSig(top, bottom);}
 
     void getTimeSig(int *top, int *bottom) {m_bar.getTimeSig(top, bottom);}
+    // the time signatures of the whole song, see CBar
+    void clearTimeSigMap() { m_bar.clearTimeSigMap(); }
+    void addTimeSigChange(qint64 tick, int top, int bottom) { m_bar.addTimeSigChange(tick, top, bottom); }
+    int beatsInBar(int bar) const { return m_bar.beatsInBar(bar); }
     void testWrongNoteSound(bool enable);
 
     // -1 means no sound -2 means ignore this parameter

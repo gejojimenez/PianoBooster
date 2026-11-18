@@ -31,6 +31,8 @@
 
 #include "MidiFile.h"
 
+#include <vector>
+
 // The event bits can be ORed together
 #define EVENT_BITS_playingStopped          0x0001 // set when we reach the end of piece
 #define EVENT_BITS_forceFullRedraw         0x0002 // force the whole screen to be redrawn
@@ -65,6 +67,16 @@ struct CBarPosition
     bool isSongStart() const { return bar <= 0 && beat <= 0 && ticks <= 0; }
 };
 
+// The time signature that is used from a bar onwards, up to the next change.
+struct CTimeSigSegment
+{
+    int startBar = 0;       // the first bar with this time signature
+    qint64 startTick = 0;   // the time of that bar from the start of the song, in ppqn ticks
+    int top = 4;            // beats in each bar
+    int bottom = 4;
+    qint64 beatLength = 0;  // in ppqn ticks
+};
+
 // controls the bar numbers
 class CBar
 {
@@ -75,6 +87,16 @@ public:
     // You MUST clear the time sig to 0 first before setting an new start Time Signature
     // at the start of the piece of music
     void setTimeSig(int top, int bottom);
+
+    // The time signatures of the whole song, read ahead when it is loaded, so that the
+    // positions of any bar can be worked out and not only those of the current bar.
+    // Without a map the current time signature is used for every bar.
+    void clearTimeSigMap() { m_timeSigMap.clear(); }
+    // Adds a time signature change found at a time (in ppqn ticks from the start of the
+    // song). The changes must be added in order. A change within a bar starts at the next bar.
+    void addTimeSigChange(qint64 tick, int top, int bottom);
+    int beatsInBar(int bar) const;
+    qint64 beatTicksInBar(int bar) const; // the length of a beat of that bar, scaled by SPEED_ADJUST_FACTOR
 
     int getTimeSigTop() {return m_currentTimeSigTop;} // The Numerator
     qint64 getBeatLength() {return m_beatLength;}
@@ -134,11 +156,11 @@ public:
     CBarPosition getCurrentPosition() const { return { m_barCounter, m_beatCounter, m_deltaTime }; }
 
     // Returns the position moved by a (possibly negative) number of ticks,
-    // using the current time signature.
+    // using the time signature of each bar it goes through.
     CBarPosition offsetPosition(CBarPosition position, qint64 ticks) const;
 
     // Converts a bar and a beat (both counting from 0, the beat may have a fraction)
-    // to a position, using the current time signature. The fraction is rounded down,
+    // to a position, using the time signature of that bar. The fraction is rounded down,
     // so that a start position is never after the note that the user meant; with
     // roundUp it is rounded up, so that an end position is never before it.
     CBarPosition positionFromBarBeat(int bar, double beat, bool roundUp = false) const;
@@ -147,14 +169,16 @@ public:
     // Returns the beat (counting from 0, with a fraction) of a position.
     double beatOfPosition(const CBarPosition &position) const
     {
-        return position.beat + static_cast<double>(position.ticks) /
-            static_cast<double>(m_beatLength * SPEED_ADJUST_FACTOR);
+        const qint64 beatTicks = beatTicksInBar(position.bar);
+        if (beatTicks <= 0)
+            return position.beat;
+        return position.beat + static_cast<double>(position.ticks) / static_cast<double>(beatTicks);
     }
 
     // The position as a bar number with the fraction of the bar as decimals.
     double barPosOfPosition(const CBarPosition &position) const
     {
-        return position.bar + beatOfPosition(position) / static_cast<double>(m_currentTimeSigTop);
+        return position.bar + beatOfPosition(position) / static_cast<double>(beatsInBar(position.bar));
     }
 
     double getCurrentBarPos() const { return barPosOfPosition(getCurrentPosition()); }
@@ -180,6 +204,9 @@ private:
 
     // Moves the bar and beat counters so that m_deltaTime is within the current beat.
     void normaliseDeltaTime();
+    const CTimeSigSegment *segmentOfBar(int bar) const;
+
+    std::vector<CTimeSigSegment> m_timeSigMap;
 
     qint64 m_deltaTime;
     qint64 m_beatLength; //in ppqn ticks

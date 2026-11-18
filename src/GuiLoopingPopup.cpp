@@ -67,6 +67,14 @@ QString GuiLoopingPopup::positionText(CSong *song, const CBarPosition &position,
     return tr("bar %1, beat %2").arg(position.bar + FIRST_BAR_NUMBER).arg(QLocale().toString(beat, 'g', 4));
 }
 
+// Lets the beat field go only up to the last beat of the bar, which depends on its
+// time signature (e.g. 4 beats in 4/4 and 12 in 12/8). It does not change the section.
+void GuiLoopingPopup::setBeatRange(QDoubleSpinBox *beatSpin, int bar)
+{
+    const QSignalBlocker block(beatSpin);
+    beatSpin->setMaximum(m_song->beatsInBar(bar) + 0.99);
+}
+
 // Shows a position in the start bar and beat fields, without changing the start.
 void GuiLoopingPopup::showStart(const CBarPosition &start)
 {
@@ -75,6 +83,7 @@ void GuiLoopingPopup::showStart(const CBarPosition &start)
     const QSignalBlocker blockBar(startBarSpin);
     const QSignalBlocker blockBeat(startBeatSpin);
     startBarSpin->setValue(start.bar + FIRST_BAR_NUMBER);
+    setBeatRange(startBeatSpin, start.bar);
     startBeatSpin->setValue(beat);
 }
 
@@ -94,6 +103,7 @@ void GuiLoopingPopup::on_startBeatSpin_valueChanged(double beat)
 void GuiLoopingPopup::startEdited()
 {
     if (!m_song) return;
+    setBeatRange(startBeatSpin, startBarSpin->value() - FIRST_BAR_NUMBER);
     // the beat is shown counting from 1; round down so the start is never after the notes
     m_song->setPlayFrom(m_song->positionFromBarBeat(startBarSpin->value() - FIRST_BAR_NUMBER, startBeatSpin->value() - 1.0));
     updateInfo();
@@ -119,6 +129,7 @@ void GuiLoopingPopup::showEnd(const CBarPosition &end)
     const QSignalBlocker blockBar(endBarSpin);
     const QSignalBlocker blockBeat(endBeatSpin);
     endBarSpin->setValue(end.bar + FIRST_BAR_NUMBER);
+    setBeatRange(endBeatSpin, end.bar);
     endBeatSpin->setValue(beat);
 }
 
@@ -144,6 +155,7 @@ void GuiLoopingPopup::on_endBeatSpin_valueChanged(double beat)
 void GuiLoopingPopup::endEdited()
 {
     if (!m_song) return;
+    setBeatRange(endBeatSpin, endBarSpin->value() - FIRST_BAR_NUMBER);
     // the beat is shown counting from 1; round up so the notes at the end are included
     m_end = m_song->positionFromBarBeat(endBarSpin->value() - FIRST_BAR_NUMBER, endBeatSpin->value() - 1.0, true);
     const QSignalBlocker blockCheck(loopCheck);

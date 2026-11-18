@@ -79,9 +79,65 @@ void CBar::adjustDeltaTime(qint64 ticks)
     normaliseDeltaTime();
 }
 
+void CBar::addTimeSigChange(qint64 tick, int top, int bottom)
+{
+    if (top <= 0 || bottom <= 0)
+        return;
+    CTimeSigSegment segment;
+    segment.top = top;
+    segment.bottom = bottom;
+    segment.beatLength = (CMidiFile::getPulsesPerQuarterNote() * 4) / bottom;
+    if (segment.beatLength <= 0)
+        return;
+
+    // like rewind(), the first time signature of the song is used from its start
+    if (!m_timeSigMap.empty())
+    {
+        const CTimeSigSegment &last = m_timeSigMap.back();
+        const qint64 barTicks = last.beatLength * last.top;
+        // the whole bars of the last time signature up to the change, rounded up
+        const qint64 bars = (tick > last.startTick) ? (tick - last.startTick + barTicks - 1) / barTicks : 0;
+        segment.startBar = last.startBar + static_cast<int>(bars);
+        segment.startTick = last.startTick + bars * barTicks;
+        if (segment.startBar == last.startBar)
+        {
+            m_timeSigMap.back() = segment; // replaces a change at the same bar
+            return;
+        }
+        if (last.top == top && last.bottom == bottom)
+            return; // nothing changes
+    }
+    m_timeSigMap.push_back(segment);
+}
+
+const CTimeSigSegment *CBar::segmentOfBar(int bar) const
+{
+    const CTimeSigSegment *found = nullptr;
+    for (const CTimeSigSegment &segment : m_timeSigMap)
+    {
+        if (segment.startBar > bar && found)
+            break;
+        found = &segment;
+    }
+    return found;
+}
+
+int CBar::beatsInBar(int bar) const
+{
+    const CTimeSigSegment *segment = segmentOfBar(bar);
+    return segment ? segment->top : m_currentTimeSigTop;
+}
+
+qint64 CBar::beatTicksInBar(int bar) const
+{
+    const CTimeSigSegment *segment = segmentOfBar(bar);
+    return (segment ? segment->beatLength : m_beatLength) * SPEED_ADJUST_FACTOR;
+}
+
 void CBar::normaliseDeltaTime()
 {
-    const qint64 beatTicks = m_beatLength * SPEED_ADJUST_FACTOR;
+    // the length of the beats changes with the time signature of each bar
+    qint64 beatTicks = beatTicksInBar(m_barCounter);
     if (beatTicks <= 0)
         return;
 
@@ -89,54 +145,66 @@ void CBar::normaliseDeltaTime()
     {
         m_deltaTime -= beatTicks;
         m_beatCounter++;
-        if (m_beatCounter >= m_currentTimeSigTop)
+        if (m_beatCounter >= beatsInBar(m_barCounter))
         {
             m_barCounter++;
             m_beatCounter=0;
             ppLogDebug("Bar number %d", m_barCounter);
             m_eventBits |= EVENT_BITS_newBarNumber;
+            beatTicks = beatTicksInBar(m_barCounter);
+            if (beatTicks <= 0)
+                return;
         }
     }
     while (m_deltaTime < 0 && (m_beatCounter > 0 || m_barCounter > 0))
     {
-        m_deltaTime += beatTicks;
         if (m_beatCounter > 0)
             m_beatCounter--;
         else
         {
             m_barCounter--;
-            m_beatCounter = m_currentTimeSigTop - 1;
+            m_beatCounter = beatsInBar(m_barCounter) - 1;
             m_eventBits |= EVENT_BITS_newBarNumber;
+            beatTicks = beatTicksInBar(m_barCounter);
+            if (beatTicks <= 0)
+                return;
         }
+        m_deltaTime += beatTicks;
     }
 }
 
 CBarPosition CBar::offsetPosition(CBarPosition position, qint64 ticks) const
 {
-    const qint64 beatTicks = m_beatLength * SPEED_ADJUST_FACTOR;
     position.ticks += ticks;
+    qint64 beatTicks = beatTicksInBar(position.bar);
     if (beatTicks <= 0)
         return position;
 
     while (position.ticks >= beatTicks)
     {
         position.ticks -= beatTicks;
-        if (++position.beat >= m_currentTimeSigTop)
+        if (++position.beat >= beatsInBar(position.bar))
         {
             position.beat = 0;
             position.bar++;
+            beatTicks = beatTicksInBar(position.bar);
+            if (beatTicks <= 0)
+                return position;
         }
     }
     while (position.ticks < 0 && (position.beat > 0 || position.bar > 0))
     {
-        position.ticks += beatTicks;
         if (position.beat > 0)
             position.beat--;
         else
         {
             position.bar--;
-            position.beat = m_currentTimeSigTop - 1;
+            position.beat = beatsInBar(position.bar) - 1;
+            beatTicks = beatTicksInBar(position.bar);
+            if (beatTicks <= 0)
+                return position;
         }
+        position.ticks += beatTicks;
     }
     return position;
 }
@@ -148,7 +216,7 @@ CBarPosition CBar::positionFromBarBeat(int bar, double beat, bool roundUp) const
     if (beat < 0.0)
         beat = 0.0;
 
-    const qint64 beatTicks = m_beatLength * SPEED_ADJUST_FACTOR;
+    const qint64 beatTicks = beatTicksInBar(bar);
     // Beats are typed with two decimals, so an end typed as e.g. 2.33 is meant to
     // include a note at 2 1/3: extend it by the precision of the field.
     if (roundUp)
@@ -170,7 +238,7 @@ qint64 CBar::goToBarNumer()
     if (m_barCounter == m_playFrom.bar && m_beatCounter == m_playFrom.beat)
         ticks = m_playFrom.ticks - m_deltaTime;
     else
-        ticks = m_beatLength * SPEED_ADJUST_FACTOR - m_deltaTime;
+        ticks = beatTicksInBar(m_barCounter) - m_deltaTime;
     if (ticks <= 0)
         ticks = 1;
     addDeltaTime(ticks);
@@ -197,7 +265,7 @@ void CBar::checkGotoBar()
 void CBar::setPlayFromBar(double bar)
 {
     const int wholeBar = static_cast<int>(bar);
-    setPlayFrom(positionFromBarBeat(wholeBar, (bar - wholeBar) * m_currentTimeSigTop));
+    setPlayFrom(positionFromBarBeat(wholeBar, (bar - wholeBar) * beatsInBar(wholeBar)));
 }
 
 void CBar::setPlayFrom(const CBarPosition &position)
@@ -223,7 +291,7 @@ void CBar::setPlayUptoBar(double endBar)
         return;
     }
     const int wholeBar = static_cast<int>(endBar);
-    setLoop(true, positionFromBarBeat(wholeBar, (endBar - wholeBar) * m_currentTimeSigTop));
+    setLoop(true, positionFromBarBeat(wholeBar, (endBar - wholeBar) * beatsInBar(wholeBar)));
 }
 
 void CBar::setLoopingBars(double bars)
