@@ -1185,6 +1185,8 @@
     <message><source>Library...</source><translation>Biblioteca...</translation></message>
     <message><source>Choose a song from the library: favourites, recent songs and your folders</source><translation>Elegir una canción de la biblioteca: favoritas, recientes y tus carpetas</translation></message>
     <message><source>No song</source><translation>Ninguna canción</translation></message>
+    <message><source>Editor...</source><translation>Editor...</translation></message>
+    <message><source>Open the section editor, to create and change the sections on a view of the whole song (Ctrl+E)</source><translation>Abrir el editor de fragmentos, para crear y cambiar los fragmentos sobre una vista de toda la canción (Ctrl+E)</translation></message>
     <message numerus="yes"><source>%n bar(s)</source><translation><numerusform>%n compás</numerusform><numerusform>%n compases</numerusform></translation></message>
     <message>
         <location filename="../src/GuiSidePanel.ui" line="20"/>
@@ -1733,6 +1735,12 @@
         <source>Song Settings</source>
         <translation>Configuración de la canción</translation>
     </message>
+    <message><source>Section &amp;Editor...</source><translation>&amp;Editor de fragmentos...</translation></message>
+    <message><source>Create and change the sections of the song on a view of the whole song</source><translation>Crear y cambiar los fragmentos de la canción sobre una vista de toda la canción</translation></message>
+    <message><source>Ctrl+E</source><translation>Ctrl+E</translation></message>
+    <message><source>Section Editor</source><translation>Editor de fragmentos</translation></message>
+    <message><source>First open a song.</source><translation>Primero abre una canción.</translation></message>
+    <message><source>The MIDI file "%1" cannot be read.</source><translation>No se puede leer el archivo MIDI «%1».</translation></message>
     <message>
         <location filename="../src/QtWindow.cpp" line="370"/>
         <source>Ctrl+D</source>
@@ -2068,5 +2076,75 @@
 The files are not deleted, and the songs keep their favourites and statistics.</source><translation>¿Quitar «%1» de la biblioteca?
 
 Los archivos no se borran, y las canciones conservan sus favoritas y estadísticas.</translation></message>
+</context>
+<context>
+    <name>CSongOverview</name>
+    <message><source>The whole song: click or drag to go to a place</source><translation>Toda la canción: haz clic o arrastra para ir a un lugar</translation></message>
+</context>
+<context>
+    <name>GuiSectionEditor</name>
+    <message><source>Section Editor - %1</source><translation>Editor de fragmentos - %1</translation></message>
+    <message><source>Zoom out (Ctrl + mouse wheel)</source><translation>Alejar (Ctrl + rueda del ratón)</translation></message>
+    <message><source>Zoom in (Ctrl + mouse wheel)</source><translation>Acercar (Ctrl + rueda del ratón)</translation></message>
+    <message><source>Whole Song</source><translation>Toda la canción</translation></message>
+    <message><source>Show the whole song</source><translation>Mostrar toda la canción</translation></message>
+    <message><source>Selection</source><translation>Selección</translation></message>
+    <message><source>Show the whole selection</source><translation>Mostrar toda la selección</translation></message>
+    <message><source>Bar</source><translation>Compás</translation></message>
+    <message><source>Beat</source><translation>Tiempo</translation></message>
+    <message><source>Half beat</source><translation>Medio tiempo</translation></message>
+    <message><source>Quarter beat</source><translation>Cuarto de tiempo</translation></message>
+    <message><source>Free</source><translation>Libre</translation></message>
+    <message><source>What the start and the end of the selection go to when they are dragged</source><translation>A qué se ajustan el inicio y el final de la selección al arrastrarlos</translation></message>
+    <message><source>Other instruments</source><translation>Otros instrumentos</translation></message>
+    <message><source>Show the notes of the instruments that are not the piano part (the drums are never shown)</source><translation>Mostrar las notas de los instrumentos que no son la parte de piano (la batería nunca se muestra)</translation></message>
+    <message><source>Right hand</source><translation>Mano derecha</translation></message>
+    <message><source>Left hand</source><translation>Mano izquierda</translation></message>
+    <message><source>Others</source><translation>Otros</translation></message>
+    <message><source>Zoom:</source><translation>Zoom:</translation></message>
+    <message><source>Snap to:</source><translation>Ajustar a:</translation></message>
+    <message><source>Drag on the ruler or on the notes to select a stretch of the song, and drag its edges to change it. The mouse wheel scrolls; click a section on the strip under the ruler to choose it.</source><translation>Arrastra sobre la regla o sobre las notas para seleccionar un trozo de la canción, y arrastra sus bordes para cambiarlo. La rueda del ratón desplaza; haz clic en un fragmento de la franja bajo la regla para elegirlo.</translation></message>
+    <message><source>New...</source><translation>Nuevo...</translation></message>
+    <message><source>Save the selection as a new section</source><translation>Guardar la selección como un fragmento nuevo</translation></message>
+    <message><source>Save</source><translation>Guardar</translation></message>
+    <message><source>Save the changes to the start and end of the chosen section</source><translation>Guardar los cambios del inicio y el final del fragmento elegido</translation></message>
+    <message><source>Rename...</source><translation>Renombrar...</translation></message>
+    <message><source>Rename the chosen section</source><translation>Renombrar el fragmento elegido</translation></message>
+    <message><source>Delete</source><translation>Borrar</translation></message>
+    <message><source>Delete the chosen section</source><translation>Borrar el fragmento elegido</translation></message>
+    <message><source>Sections</source><translation>Fragmentos</translation></message>
+    <message><source>The bar where the selection starts</source><translation>El compás donde empieza la selección</translation></message>
+    <message><source>The beat where the selection starts (1 is the start of the bar)</source><translation>El tiempo donde empieza la selección (1 es el inicio del compás)</translation></message>
+    <message><source>The selection ends just before this bar and beat: they are not included</source><translation>La selección termina justo antes de este compás y tiempo: no se incluyen</translation></message>
+    <message><source>Starts at:</source><translation>Empieza en:</translation></message>
+    <message><source>bar</source><translation>compás</translation></message>
+    <message><source>beat</source><translation>tiempo</translation></message>
+    <message><source>Ends before:</source><translation>Termina antes de:</translation></message>
+    <message><source>Play</source><translation>Reproducir</translation></message>
+    <message><source>Listen to the selection, or to the song from the place shown if nothing is selected (Space)</source><translation>Escuchar la selección, o la canción desde el lugar mostrado si no hay nada seleccionado (Espacio)</translation></message>
+    <message><source>Repeat</source><translation>Repetir</translation></message>
+    <message><source>Start the selection again when it ends</source><translation>Volver a empezar la selección cuando termina</translation></message>
+    <message><source>Listen</source><translation>Escuchar</translation></message>
+    <message><source>Speed:</source><translation>Velocidad:</translation></message>
+    <message><source>Practise</source><translation>Practicar</translation></message>
+    <message><source>Close the editor and practise the selection, repeating it</source><translation>Cerrar el editor y practicar la selección, repitiéndola</translation></message>
+    <message><source>Close</source><translation>Cerrar</translation></message>
+    <message><source>Section Changed</source><translation>Fragmento cambiado</translation></message>
+    <message><source>The start or the end of "%1" has been changed. Save the changes?</source><translation>Se ha cambiado el inicio o el final de «%1». ¿Guardar los cambios?</translation></message>
+    <message><source>The start or the end of "%1" has been changed. Save the changes before practising?</source><translation>Se ha cambiado el inicio o el final de «%1». ¿Guardar los cambios antes de practicar?</translation></message>
+    <message><source>bar %1</source><translation>compás %1</translation></message>
+    <message><source>bars %1-%2</source><translation>compases %1-%2</translation></message>
+    <message><source>Nothing is selected: drag on the ruler or on the notes.</source><translation>No hay nada seleccionado: arrastra sobre la regla o sobre las notas.</translation></message>
+    <message numerus="yes"><source>%n bar(s)</source><translation><numerusform>%n compás</numerusform><numerusform>%n compases</numerusform></translation></message>
+    <message><source>Changed: press "Save" to keep it in "%1", or "New" to make another section.</source><translation>Cambiado: pulsa «Guardar» para conservarlo en «%1», o «Nuevo» para crear otro fragmento.</translation></message>
+    <message><source>Section "%1"</source><translation>Fragmento «%1»</translation></message>
+    <message><source>New Section</source><translation>Nuevo fragmento</translation></message>
+    <message><source>Name of the section:</source><translation>Nombre del fragmento:</translation></message>
+    <message><source>Section %1</source><translation>Fragmento %1</translation></message>
+    <message><source>Rename Section</source><translation>Renombrar fragmento</translation></message>
+    <message><source>Delete Section</source><translation>Borrar fragmento</translation></message>
+    <message><source>Delete the section "%1"?</source><translation>¿Borrar el fragmento «%1»?</translation></message>
+    <message><source>There is no MIDI output to play through. Choose one in "Setup" / "MIDI Setup".</source><translation>No hay ninguna salida MIDI por la que reproducir. Elige una en «Configuración» / «Configuración Midi».</translation></message>
+    <message><source>Stop</source><translation>Detener</translation></message>
 </context>
 </TS>

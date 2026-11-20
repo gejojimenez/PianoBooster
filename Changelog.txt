@@ -1,3 +1,24 @@
+1.3.0 (20 Nov 2026)
+- Section editor (Song / Section Editor..., Ctrl+E, or "Editor..." under the section list
+  of the side panel): a window to create and change the sections of a song on a piano
+  roll of the whole song, without having to play it to reach their start and end.
+  - The piano roll scrolls with the mouse wheel and zooms with Ctrl + wheel or the zoom
+    buttons; an overview of the whole song above it shows where you are, and a click on
+    it goes to that place. The notes of the right hand are blue, those of the left hand
+    green and those of the other instruments grey (they can be hidden).
+  - Drag on the ruler or on the notes to select a stretch, and drag its edges to change
+    it. The edges snap to bars, beats, half or quarter beats, or nothing. The start and
+    the end can also be typed as bar and beat; the end is the place just before which
+    the section stops.
+  - The saved sections are shown on a strip under the ruler and in a list: choose one to
+    see and change it, then "Save"; "New..." saves the selection as a new section.
+  - "Play" listens to the selection (or to the song from the place shown), at a speed of
+    its own and repeating if wanted, through the MIDI output, with a red line showing
+    where it is playing. Space starts and stops it.
+  - "Practise" closes the editor and practises the selection or the section, repeating.
+  - Sections created in the practice window keep working as before: both windows use
+    the same sections.
+
 1.2.1 (18 Nov 2026)
 - Songs whose time signature changes (e.g. 4/4 at the start and 12/8 later): the start
   and end of a section, typed in "Start / Repeat" or saved as a named section, are now

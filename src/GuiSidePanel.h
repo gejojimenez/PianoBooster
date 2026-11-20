@@ -70,6 +70,16 @@ public:
     // reads the parts of the current song and selects selectId (or the whole song)
     void loadParts(qint64 selectId = -1);
 
+    const QString &songFileName() const { return m_songFileName; }
+    qint64 selectedPartId() const { const CSongPart *part = selectedPart(); return part ? part->id : -1; }
+    // After the section editor: reads the parts again, and plays the selected one with
+    // its new start and end (or the whole song, if it has been deleted)
+    void reloadPartsAfterEditing();
+    // Selects a part and plays it, repeating
+    void practisePart(qint64 id);
+    // Plays a stretch of the song that is not a saved part, repeating
+    void practiseSelection(const CBarPosition &start, const CBarPosition &end);
+
 private slots:
     void partSelected(int index);
     void addPart();
@@ -79,6 +89,7 @@ private slots:
 
 signals:
     void libraryRequested();
+    void sectionEditorRequested();
 
 public:
 
@@ -228,6 +239,7 @@ private:
     QToolButton* m_updatePartButton;
     QToolButton* m_renamePartButton;
     QToolButton* m_deletePartButton;
+    QToolButton* m_editorButton;
     QWidget *m_parent;
 };
 

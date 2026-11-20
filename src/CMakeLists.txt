@@ -176,6 +176,10 @@ SET( PIANOBOOSTER_SRCS
     GuiLibraryDialog.cpp
     Library.cpp
     MidiInfo.cpp
+    SongMap.cpp
+    SectionPlayer.cpp
+    GuiPianoRoll.cpp
+    GuiSectionEditor.cpp
     GlView.cpp
     ${PB_BASE_SRCS}
     StavePosition.cpp

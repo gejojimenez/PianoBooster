@@ -28,6 +28,7 @@
 #include "QtWindow.h"
 #include "version.h"
 #include "GuiLibraryDialog.h"
+#include "GuiSectionEditor.h"
 #include "MidiInfo.h"
 
 #include <QDebug>
@@ -104,6 +105,7 @@ QtWindow::QtWindow()
 
     m_sidePanel = new GuiSidePanel(this, m_settings);
     connect(m_sidePanel, &GuiSidePanel::libraryRequested, this, &QtWindow::openLibrary);
+    connect(m_sidePanel, &GuiSidePanel::sectionEditorRequested, this, &QtWindow::openSectionEditor);
     m_sidePanel->setLibrary(m_library);
     m_topBar = new GuiTopBar(this, m_settings);
     m_tutorWindow = new QTextBrowser(this);
@@ -401,6 +403,11 @@ void QtWindow::createActions()
     m_songDetailsAct->setShortcut(tr("Ctrl+D"));
     connect(m_songDetailsAct, SIGNAL(triggered()), this, SLOT(showSongDetailsDialog()));
 
+    m_sectionEditorAct = new QAction(tr("Section &Editor..."), this);
+    m_sectionEditorAct->setToolTip(tr("Create and change the sections of the song on a view of the whole song"));
+    m_sectionEditorAct->setShortcut(tr("Ctrl+E"));
+    connect(m_sectionEditorAct, &QAction::triggered, this, &QtWindow::openSectionEditor);
+
     QAction* act = new QAction(this);
     act->setShortcut(tr("Shift+F1"));
     connect(act, SIGNAL(triggered()), this, SLOT(enableFollowTempo()));
@@ -453,6 +460,7 @@ void QtWindow::createMenus()
     m_songMenu = menuBar()->addMenu(tr("&Song"));
     m_songMenu->setToolTipsVisible(true);
     m_songMenu->addAction(m_songDetailsAct);
+    m_songMenu->addAction(m_sectionEditorAct);
 
     m_setupMenu = menuBar()->addMenu(tr("Set&up"));
     m_setupMenu->setToolTipsVisible(true);
@@ -699,6 +707,45 @@ void QtWindow::openLibrary()
     {
         m_settings->openSongFile(library.selectedSong());
         setCurrentFile(library.selectedSong());
+    }
+    m_song->flushMidiInput();
+    m_glWidget->startTimerEvent();
+}
+
+void QtWindow::openSectionEditor()
+{
+    const QString songFile = m_sidePanel->songFileName();
+    if (songFile.isEmpty())
+    {
+        QMessageBox::information(this, tr("Section Editor"), tr("First open a song."));
+        return;
+    }
+    m_topBar->stopMuiscPlaying();
+    // the editor plays through the same MIDI output, so the conductor must not run
+    m_glWidget->stopTimerEvent();
+
+    GuiSectionEditor editor(m_library, songFile, m_song->getSongTitle(), m_song, m_song->getSpeed(), this);
+    if (!editor.isValid())
+    {
+        QMessageBox::warning(this, tr("Section Editor"),
+                             tr("The MIDI file \"%1\" cannot be read.").arg(QDir::toNativeSeparators(songFile)));
+    }
+    else
+    {
+        editor.setInitialSelection(m_sidePanel->selectedPartId(), m_song->isLoopActive(),
+                                   m_song->getPlayFrom(), m_song->getPlayUpto());
+        if (editor.exec() == QDialog::Accepted)
+        {
+            if (editor.practisePartId() >= 0)
+                m_sidePanel->practisePart(editor.practisePartId());
+            else
+                m_sidePanel->practiseSelection(editor.practiseStart(), editor.practiseEnd());
+        }
+        else
+            m_sidePanel->reloadPartsAfterEditing();
+        // the editor may have played with the volumes of the song: put back those of the side panel
+        m_song->boostVolume(m_song->getBoostVolume());
+        m_song->pianoVolume(m_song->getPianoVolume());
     }
     m_song->flushMidiInput();
     m_glWidget->startTimerEvent();

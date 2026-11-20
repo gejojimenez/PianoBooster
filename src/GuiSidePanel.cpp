@@ -81,11 +81,16 @@ GuiSidePanel::GuiSidePanel(QWidget *parent, CSettings* settings)
     connect(m_updatePartButton, &QToolButton::clicked, this, &GuiSidePanel::updatePart);
     connect(m_renamePartButton, &QToolButton::clicked, this, &GuiSidePanel::renamePart);
     connect(m_deletePartButton, &QToolButton::clicked, this, &GuiSidePanel::deletePart);
+    m_editorButton = new QToolButton;
+    m_editorButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    connect(m_editorButton, &QToolButton::clicked, this, &GuiSidePanel::sectionEditorRequested);
     // the list on one row and its buttons below, so that the list is wide enough for the names
     auto *partListLayout = new QHBoxLayout;
     partListLayout->addWidget(m_partLabel);
     partListLayout->addWidget(m_partCombo, 1);
     auto *partButtonLayout = new QHBoxLayout;
+    m_editorButton->setAutoRaise(true);
+    partButtonLayout->addWidget(m_editorButton);
     partButtonLayout->addStretch(1);
     for (QToolButton *button : { m_addPartButton, m_updatePartButton, m_renamePartButton, m_deletePartButton })
     {
@@ -144,6 +149,8 @@ void GuiSidePanel::setPartTexts()
     m_updatePartButton->setToolTip(tr("Replace the start and end of the selected section with the current ones"));
     m_renamePartButton->setToolTip(tr("Rename the selected section"));
     m_deletePartButton->setToolTip(tr("Delete the selected section"));
+    m_editorButton->setText(tr("Editor..."));
+    m_editorButton->setToolTip(tr("Open the section editor, to create and change the sections on a view of the whole song (Ctrl+E)"));
     if (m_partCombo->count() > 0)
         m_partCombo->setItemText(0, tr("Whole song"));
 }
@@ -172,6 +179,7 @@ void GuiSidePanel::updatePartButtons()
     const bool partSelected = m_partCombo->currentIndex() > 0;
     m_partCombo->setEnabled(hasSong);
     m_addPartButton->setEnabled(hasSong);
+    m_editorButton->setEnabled(hasSong);
     m_updatePartButton->setEnabled(partSelected);
     m_renamePartButton->setEnabled(partSelected);
     m_deletePartButton->setEnabled(partSelected);
@@ -276,6 +284,36 @@ void GuiSidePanel::deletePart()
     m_library->deletePart(selected->id);
     loadParts();
     partSelected(0); // back to the whole song
+}
+
+void GuiSidePanel::reloadPartsAfterEditing()
+{
+    const qint64 previous = selectedPartId();
+    loadParts(previous);
+    if (previous < 0)
+        return; // the start and end set in "Start / Repeat" are kept
+    // with its new start and end, or the whole song if it has been deleted
+    partSelected(m_partCombo->currentIndex());
+}
+
+void GuiSidePanel::practisePart(qint64 id)
+{
+    loadParts(id);
+    partSelected(m_partCombo->currentIndex());
+}
+
+void GuiSidePanel::practiseSelection(const CBarPosition &start, const CBarPosition &end)
+{
+    loadParts();
+    if (!m_song)
+        return;
+    if (m_topBar)
+        m_topBar->stopMuiscPlaying();
+    m_song->setPlayFrom(start);
+    m_song->setLoop(true, end);
+    if (m_topBar)
+        m_topBar->updateSectionSummary();
+    updatePartButtons();
 }
 
 void GuiSidePanel::init(CSong* songObj, CTrackList* trackList, GuiTopBar* topBar)

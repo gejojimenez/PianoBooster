@@ -83,6 +83,7 @@ public:
 private slots:
     void open();
     void openLibrary();
+    void openSectionEditor();
     void help();
     void website();
     void about();
@@ -227,6 +228,7 @@ private:
     QAction *m_fullScreenStateAct;
     QAction *m_setupPreferencesAct;
     QAction *m_songDetailsAct;
+    QAction *m_sectionEditorAct;
 
     QMenu *m_fileMenu;
     QMenu *m_viewMenu;
