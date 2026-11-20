@@ -25,24 +25,12 @@
 */
 
 /*!
- * The following attributes are save in the pb.cfg xml file
- * BOOK:
- *   name       the name of the book
- *   lastsong   the name of the last song played so it can be restored
- *
- * SONG:
- *   name
- *   hand
- *   leftHandMidiChannel
- *   rightHandMidiChannel
- *
- * HAND:
- *   speed
- *
+ * The settings of each song (hand, speed and the MIDI channel of each hand) and the
+ * last song of each folder (book) are kept in the library database (see Library.h).
 */
 
-#include <QTextStream>
 #include <QFile>
+#include <QXmlStreamReader>
 #include "Settings.h"
 #include "GuiTopBar.h"
 #include "GuiSidePanel.h"
@@ -66,7 +54,6 @@ CSettings::CSettings(QtWindow *mainWindow) : QSettings(CSettings::IniFormat, CSe
     // It is all done in the initialisation list
 
     m_advancedMode = false;
-    m_pianistActive = false;
     m_noteNamesEnabled = value("Score/NoteNames", true ).toBool();
     m_coloredNotes = value("Score/ColoredNotes", false ).toBool();
     m_tutorPagesEnabled = value("Tutor/TutorPages", true ).toBool();
@@ -118,155 +105,88 @@ void CSettings::setFollowThroughErrorsEnabled(bool value) {
     setValue("Score/FollowThroughErrors", value );
 }
 
-// Open a document if it exists or else create it (also delete an duplicates
-QDomElement CSettings::openDomElement(QDomElement parent, const QString & elementName, const QString & attributeName)
-{
-    QDomElement wantedElement;
-
-    debugSettings(("openDomElement1 %s %s %s", qPrintable(parent.tagName()), qPrintable(elementName), qPrintable(elementName)));
-    // There should be only a single element without a name
-    // there should be lots of elements but only one with this tag name
-
-    QDomNode n = parent.firstChild();
-    while(!n.isNull())
-    {
-        QDomElement e = n.toElement(); // try to convert the node to an element.
-        debugSettings(("openDomElement2 tagName %s %s", qPrintable(e.tagName()), qPrintable(elementName)));
-        if(!e.isNull() && e.tagName() == elementName)
-        {
-            if (attributeName.isEmpty() || e.attribute("name") == attributeName)
-            {
-                debugSettings(("openDomElement3 ragName %s %s", qPrintable(e.attribute("name")), qPrintable(attributeName)));
-
-                if (wantedElement.isNull())
-                    wantedElement = e;   // we have found a match
-                else
-                    parent.removeChild(e); // remove unwanted duplicates
-            }
-        }
-        n = n.nextSibling();
-    }
-
-    if (wantedElement.isNull())
-    {
-        // Create the element because it does not exist
-        wantedElement = m_domDocument.createElement(elementName);
-        if (!attributeName.isEmpty() )
-            wantedElement.setAttribute("name", attributeName);
-        parent.appendChild(wantedElement);
-    }
-
-    return wantedElement;
-}
-
-void CSettings::loadHandSettings()
-{
-    if (m_domSong.isNull())
-        return;
-    m_domHand = openDomElement(m_domSong, "hand", partToHandString(m_song->getActiveHand()));
-    //m_guiTopBar->setSpeed(m_domHand.attribute("speed", "100" ).toInt());
-}
-
-void CSettings::saveHandSettings()
-{
-    //m_domHand.setAttribute("speed", m_guiTopBar->getSpeed());
-}
-
 void CSettings::loadSongSettings()
 {
-    m_domSong = openDomElement(m_domBook, "song", m_currentSongName);
-    m_guiSidePanel->setCurrentHand(m_domSong.attribute("hand", "both" ));
-    m_guiTopBar->setSpeed(m_domSong.attribute("speed", "100" ).toInt());
-
-    // -1 means none and -2 means not set
-    int left = m_domSong.attribute("leftHandMidiChannel", "-2").toInt();
-    int right = m_domSong.attribute("rightHandMidiChannel", "-2").toInt();
-    CNote::setChannelHands(left, right);
-
-    loadHandSettings();
+    m_songSettingsPath = getCurrentSongLongFileName();
+    m_songSettings = (m_library && !m_songSettingsPath.isEmpty()) ? m_library->songSettings(m_songSettingsPath)
+                                                                  : CSongSettings();
+    m_guiSidePanel->setCurrentHand(m_songSettings.hand);
+    m_guiTopBar->setSpeed(m_songSettings.speed);
+    CNote::setChannelHands(m_songSettings.leftChannel, m_songSettings.rightChannel);
 }
 
+// Saves the hand and the speed of the song whose settings were loaded last, if they have changed
 void CSettings::saveSongSettings()
 {
-    m_domSong.setAttribute("hand", partToHandString(m_song->getActiveHand()));
-    m_domSong.setAttribute("speed", m_guiTopBar->getSpeed());
-
-    saveHandSettings();
+    if (!m_library || m_songSettingsPath.isEmpty() || !QFile::exists(m_songSettingsPath))
+        return;
+    const QString hand = partToHandString(m_song->getActiveHand());
+    const int speed = m_guiTopBar->getSpeed();
+    if (m_songSettings.valid && hand == m_songSettings.hand && speed == m_songSettings.speed)
+        return;
+    if (!m_songSettings.valid && hand == "both" && speed == 100)
+        return; // still the defaults: nothing to keep
+    m_songSettings.valid = true;
+    m_songSettings.hand = hand;
+    m_songSettings.speed = speed;
+    m_library->setSongSettings(m_songSettingsPath, m_songSettings);
 }
 
 void CSettings::loadBookSettings()
 {
-    QDomElement root = m_domDocument.documentElement();
-    m_domBook = openDomElement(root, "book");
-    QString lastSong = m_domBook.attribute("lastsong");
+    if (!m_library)
+        return;
+    importBookConfig(currentBookFolder());
+    QString lastSong = m_library->lastSong(currentBookFolder());
     if (!lastSong.isEmpty() && m_currentSongName.isEmpty())
         m_currentSongName = lastSong;
 }
 
-void CSettings::saveBookSettings()
+// Older versions kept the settings of the songs of each folder in a "pb.cfg" file
+// in the folder: move them to the library and delete the file.
+void CSettings::importBookConfig(const QString &folder)
 {
-    if (!m_currentBookName.isEmpty())
-        m_domBook.setAttribute("name", m_currentBookName);
-    if (!m_currentSongName.isEmpty())
-        m_domBook.setAttribute("lastsong", m_currentSongName);
+    QFile file(folder + "/pb.cfg");
+    if (!file.open(QIODevice::ReadOnly))
+        return;
 
-    saveSongSettings();
-}
-
-void CSettings::loadXmlFile()
-{
-    m_domDocument.documentElement().clear();
-    m_domDocument.clear();
-    m_domBook.clear();
-    m_domSong.clear();
-    m_domHand.clear();
-
-    QFile file(m_bookPath + getCurrentBookName() + '/' + "pb.cfg");
-    if (file.open(QIODevice::ReadOnly))
+    m_library->beginBatch();
+    QXmlStreamReader xml(&file);
+    while (!xml.atEnd())
     {
-        if (!m_domDocument.setContent(&file)) {
-            ppLogError("Cannot setContent on XLM file");
+        if (xml.readNext() != QXmlStreamReader::StartElement)
+            continue;
+        const QXmlStreamAttributes attributes = xml.attributes();
+        if (xml.name() == QLatin1String("book"))
+        {
+            const QString lastSong = attributes.value("lastsong").toString();
+            if (!lastSong.isEmpty() && m_library->lastSong(folder).isEmpty())
+                m_library->setLastSong(folder, lastSong);
         }
-        file.close();
+        else if (xml.name() == QLatin1String("song"))
+        {
+            const QString path = folder + '/' + attributes.value("name").toString();
+            // the settings already in the library, maybe of a copy of the song, are kept
+            if (!attributes.value("name").isEmpty() && QFile::exists(path) && !m_library->songSettings(path).valid)
+            {
+                CSongSettings settings;
+                settings.valid = true;
+                if (attributes.hasAttribute("hand"))
+                    settings.hand = attributes.value("hand").toString();
+                if (attributes.hasAttribute("speed"))
+                    settings.speed = attributes.value("speed").toInt();
+                if (attributes.hasAttribute("leftHandMidiChannel"))
+                    settings.leftChannel = attributes.value("leftHandMidiChannel").toInt();
+                if (attributes.hasAttribute("rightHandMidiChannel"))
+                    settings.rightChannel = attributes.value("rightHandMidiChannel").toInt();
+                m_library->setSongSettings(path, settings);
+            }
+        }
     }
-
-    QDomElement root = m_domDocument.documentElement();
-    if (root.tagName() != "pianobooster")
-    {
-        m_domDocument.clear();
-        QDomComment comment =    m_domDocument.createComment("Piano Booster Configuration file");
-        m_domDocument.appendChild(comment);
-        root = m_domDocument.createElement("pianobooster");
-        m_domDocument.appendChild(root);
-    }
-
-    loadBookSettings();
-}
-
-// save the xml
-void CSettings::saveXmlFile()
-{
-    saveBookSettings();
-
-    const int IndentSize = 4;
-
-    QFile file(m_bookPath + getCurrentBookName() + '/' + "pb.cfg");
-
-    // don't save the config file unless the user really is using the system
-    if (m_pianistActive == false && file.exists() == false)
-        return;
-
-    m_pianistActive = false;
-
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        ppLogError("Cannot save xml file %s", qPrintable(file.fileName()));
-        return;
-    }
-
-    QTextStream out(&file);
-    m_domDocument.save(out, IndentSize);
+    m_library->endBatch();
     file.close();
+    if (!file.remove())
+        ppLogError("Cannot delete %s", qPrintable(file.fileName()));
 }
 
 void CSettings::updateTutorPage()
@@ -339,9 +259,7 @@ void CSettings::openSongFile(const QString & filename)
 
 void CSettings::setActiveHand(whichPart_t hand)
 {
-    saveHandSettings();
     m_song->setActiveHand(hand);
-    loadHandSettings();
 }
 
 QStringList CSettings::getSongList()
@@ -377,7 +295,7 @@ void CSettings::writeSettings()
 
     if (QFile::exists(getCurrentSongLongFileName() ))
         setValue("CurrentSong", getCurrentSongLongFileName());
-    saveXmlFile();
+    saveSongSettings();
 }
 
 void CSettings::loadSettings()
@@ -506,6 +424,8 @@ void CSettings::setCurrentSongName(const QString & name)
     m_currentSongName = name;
     debugSettings(("setCurrentSongName %s -- %s", qPrintable(name), qPrintable(getCurrentSongLongFileName())));
     setValue("CurrentSong", getCurrentSongLongFileName());
+    if (m_library)
+        m_library->setLastSong(currentBookFolder(), m_currentSongName);
 
     m_song->loadSong(getCurrentSongLongFileName());
     loadSongSettings();
@@ -520,21 +440,27 @@ void CSettings::setCurrentBookName(const QString & name, bool clearSongName)
 {
     if (name.isEmpty())
         return;
-    if (!m_currentBookName.isEmpty() && m_currentBookName != name)
-        saveXmlFile();
+    saveSongSettings();
 
     m_currentBookName = name;
     if (clearSongName)
         m_currentSongName.clear();
     debugSettings(("setCurrentBookName %s --- %s ", qPrintable(name), qPrintable(getCurrentSongLongFileName())));
-    loadXmlFile();
+    loadBookSettings();
 }
 
 void CSettings::setChannelHands(int left, int right)
 {
     CNote::setChannelHands(left, right);
-    m_domSong.setAttribute("leftHandMidiChannel", left);
-    m_domSong.setAttribute("rightHandMidiChannel", right);
+    if (m_library && !m_songSettingsPath.isEmpty() && QFile::exists(m_songSettingsPath))
+    {
+        m_songSettings.valid = true;
+        m_songSettings.hand = partToHandString(m_song->getActiveHand());
+        m_songSettings.speed = m_guiTopBar->getSpeed();
+        m_songSettings.leftChannel = left;
+        m_songSettings.rightChannel = right;
+        m_library->setSongSettings(m_songSettingsPath, m_songSettings);
+    }
     m_guiSidePanel->refresh();
 }
 

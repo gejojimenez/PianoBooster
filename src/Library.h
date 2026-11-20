@@ -46,6 +46,17 @@ struct CLibrarySong
     int partCount = 0;      // number of named parts
 };
 
+// How a song is practised. The settings belong to the contents of the song: copies of
+// the same song in different folders share them.
+struct CSongSettings
+{
+    bool valid = false;     // false if the song has no settings yet: these are the defaults
+    QString hand = "both";  // "left", "right" or "both"
+    int speed = 100;        // percentage
+    int leftChannel = -2;   // MIDI channel of each hand: -1 for none, -2 for not set
+    int rightChannel = -2;
+};
+
 // A named part of a song, to practise it on its own: played from start to end (included)
 struct CSongPart
 {
@@ -84,6 +95,15 @@ public:
     void updatePart(const CSongPart &part);
     void deletePart(qint64 id);
 
+    // The settings of a song, or the defaults if it has none
+    CSongSettings songSettings(const QString &songPath) const;
+    // Saves the settings of a song, and of all its copies
+    void setSongSettings(const QString &songPath, const CSongSettings &settings);
+
+    // The file name of the last song opened in a folder, empty if none
+    QString lastSong(const QString &folder) const;
+    void setLastSong(const QString &folder, const QString &songName);
+
     // Groups many changes in one transaction, which is much faster.
     void beginBatch();
     void endBatch();
@@ -100,6 +120,8 @@ public:
 
 private:
     bool exec(const QString &sql);
+    bool addColumn(const QString &table, const QString &column, const QString &type);
+    qint64 findOrCreateSong(const QString &path, const QString &hash);
     qint64 songId(const QString &path, bool create) const;
     QVector<CLibrarySong> query(const QString &where, const QVariantList &values = {}, const QString &tail = QString()) const;
 

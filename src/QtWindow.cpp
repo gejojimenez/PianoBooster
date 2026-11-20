@@ -63,6 +63,7 @@ QtWindow::QtWindow()
 {
     m_settings = new CSettings(this);
     m_library = new CLibrary(QFileInfo(m_settings->fileName()).absolutePath());
+    m_settings->setLibrary(m_library);
     setWindowIcon(QIcon(":/images/pianobooster.png"));
     setWindowTitle(QStringLiteral("Piano Booster " PB_VERSION)); // the name is not translated
 

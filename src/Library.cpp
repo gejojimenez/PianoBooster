@@ -68,8 +68,26 @@ CLibrary::CLibrary(const QString &folder)
                   "name TEXT NOT NULL, start_bar INTEGER, start_beat INTEGER, start_ticks INTEGER, "
                   "end_bar INTEGER, end_beat INTEGER, end_ticks INTEGER)") &&
              exec("CREATE INDEX IF NOT EXISTS parts_song ON parts(song_id)") &&
+             // version 3: the settings to practise each song, and the last song of each folder
+             addColumn("songs", "hand", "TEXT") &&
+             addColumn("songs", "speed", "INTEGER") &&
+             addColumn("songs", "left_channel", "INTEGER") &&
+             addColumn("songs", "right_channel", "INTEGER") &&
+             exec("CREATE TABLE IF NOT EXISTS folders (path TEXT PRIMARY KEY, last_song TEXT)") &&
              exec("PRAGMA foreign_keys = ON") &&
-             exec("PRAGMA user_version = 2");
+             exec("PRAGMA user_version = 3");
+}
+
+// Adds a column to a table unless it already has it (made by an older version)
+bool CLibrary::addColumn(const QString &table, const QString &column, const QString &type)
+{
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    if (!q.exec(QString("PRAGMA table_info(%1)").arg(table)))
+        return false;
+    while (q.next())
+        if (q.value(1).toString() == column)
+            return true;
+    return exec(QString("ALTER TABLE %1 ADD COLUMN %2 %3").arg(table, column, type));
 }
 
 CLibrary::~CLibrary()
@@ -134,13 +152,11 @@ void CLibrary::removeLocation(const QString &folder)
     q.exec();
 }
 
-void CLibrary::songOpened(const QString &songPath, const CMidiInfo &info)
+// Finds the song by its path, or else by its contents if it has been moved or renamed,
+// or else adds it. Returns its id, or -1 on error.
+qint64 CLibrary::findOrCreateSong(const QString &path, const QString &hash)
 {
-    const QString path = normalisePath(songPath);
-    const QString hash = fileHash(path);
     QSqlDatabase db = QSqlDatabase::database(m_connection);
-
-    // Find the song by its path, or else by its contents if it has been moved or renamed
     QSqlQuery find(db);
     find.prepare("SELECT id FROM songs WHERE path = ?");
     find.addBindValue(path);
@@ -165,11 +181,21 @@ void CLibrary::songOpened(const QString &songPath, const CMidiInfo &info)
         insert.prepare("INSERT INTO songs (path) VALUES (?)");
         insert.addBindValue(path);
         if (!insert.exec())
-            return;
+            return -1;
         id = insert.lastInsertId().toLongLong();
     }
+    return id;
+}
 
-    QSqlQuery update(db);
+void CLibrary::songOpened(const QString &songPath, const CMidiInfo &info)
+{
+    const QString path = normalisePath(songPath);
+    const QString hash = fileHash(path);
+    const qint64 id = findOrCreateSong(path, hash);
+    if (id < 0)
+        return;
+
+    QSqlQuery update(QSqlDatabase::database(m_connection));
     update.prepare("UPDATE songs SET path = ?, hash = ?, last_opened = ?, times_opened = times_opened + 1, "
                    "title = ?, time_sig_top = ?, time_sig_bottom = ?, time_sig_changes = ?, key_sharps = ?, "
                    "key_minor = ?, tempo_bpm = ?, tempo_changes = ?, duration_ms = ?, bars = ?, info_valid = ? "
@@ -404,4 +430,75 @@ void CLibrary::deletePart(qint64 id)
     q.prepare("DELETE FROM parts WHERE id = ?");
     q.addBindValue(id);
     q.exec();
+}
+
+CSongSettings CLibrary::songSettings(const QString &songPath) const
+{
+    CSongSettings settings;
+    const QString path = normalisePath(songPath);
+    const QString hash = fileHash(path);
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    // its own settings first, or else those of a copy of the song
+    q.prepare("SELECT hand, speed, left_channel, right_channel FROM songs "
+              "WHERE hand IS NOT NULL AND (path = ? OR (hash = ? AND hash <> '')) "
+              "ORDER BY path = ? DESC LIMIT 1");
+    q.addBindValue(path);
+    q.addBindValue(hash);
+    q.addBindValue(path);
+    if (q.exec() && q.next())
+    {
+        settings.valid = true;
+        settings.hand = q.value(0).toString();
+        settings.speed = q.value(1).isNull() ? 100 : q.value(1).toInt();
+        settings.leftChannel = q.value(2).isNull() ? -2 : q.value(2).toInt();
+        settings.rightChannel = q.value(3).isNull() ? -2 : q.value(3).toInt();
+    }
+    return settings;
+}
+
+void CLibrary::setSongSettings(const QString &songPath, const CSongSettings &settings)
+{
+    const QString path = normalisePath(songPath);
+    const QString hash = fileHash(path);
+    const qint64 id = findOrCreateSong(path, hash);
+    if (id < 0)
+        return;
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.prepare("UPDATE songs SET path = ?, hash = ? WHERE id = ?");
+    q.addBindValue(path);
+    q.addBindValue(hash);
+    q.addBindValue(id);
+    q.exec();
+
+    // the song and all its copies
+    q.prepare("UPDATE songs SET hand = ?, speed = ?, left_channel = ?, right_channel = ? "
+              "WHERE id = ? OR (hash = ? AND hash <> '')");
+    q.addBindValue(settings.hand);
+    q.addBindValue(settings.speed);
+    q.addBindValue(settings.leftChannel == -2 ? QVariant() : QVariant(settings.leftChannel));
+    q.addBindValue(settings.rightChannel == -2 ? QVariant() : QVariant(settings.rightChannel));
+    q.addBindValue(id);
+    q.addBindValue(hash);
+    if (!q.exec())
+        ppLogError("Library database error: %s", qPrintable(q.lastError().text()));
+}
+
+QString CLibrary::lastSong(const QString &folder) const
+{
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.prepare("SELECT last_song FROM folders WHERE path = ?");
+    q.addBindValue(normalisePath(folder));
+    if (q.exec() && q.next())
+        return q.value(0).toString();
+    return QString();
+}
+
+void CLibrary::setLastSong(const QString &folder, const QString &songName)
+{
+    QSqlQuery q(QSqlDatabase::database(m_connection));
+    q.prepare("INSERT OR REPLACE INTO folders (path, last_song) VALUES (?, ?)");
+    q.addBindValue(normalisePath(folder));
+    q.addBindValue(songName);
+    if (!q.exec())
+        ppLogError("Library database error: %s", qPrintable(q.lastError().text()));
 }
