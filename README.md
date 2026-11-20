@@ -67,6 +67,19 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
     taken as "bar 22, beat 3" while the song was at its 4/4 start.
   * The beat fields of "Start and Repeat" only go up to the last beat of the bar.
   * Sections saved before in such songs may need to be set again and updated.
+* **1.3.0 – Section editor**
+  * A new window (Song / Section Editor..., Ctrl+E, or "Editor..." in the side panel)
+    to create and change sections on a piano roll of the whole song, without playing it
+    to reach their start and end. It scrolls and zooms, with an overview of the whole
+    song and the time signature changes on the ruler.
+  * The selection is dragged with the mouse, snapping to bars, beats or parts of a beat,
+    or typed as bar and beat. Saved sections are shown on a strip and in a list.
+  * The selection can be heard through the MIDI output, at its own speed and repeating,
+    and "Practise" takes it to the practice window.
+* **1.3.1 – Instrument in the section editor**
+  * The instrument (MIDI channel) to practise is chosen in the editor, starting with
+    the one of the practice window. Its notes are coloured by hand and the others are
+    grey or hidden. "Practise" also chooses it in the practice window.
 
 ## Building
 
