@@ -1,3 +1,11 @@
+1.3.2 (21 Nov 2026)
+- The settings of each song (hand, speed and the MIDI channel of each hand) and the last
+  song of each folder are kept in the library database, instead of a "pb.cfg" file in
+  each folder. Copies of the same song in different folders share their settings.
+  - The first time a folder with a "pb.cfg" file is opened, its settings are moved to the
+    database and the file is deleted. Settings already in the database are kept.
+- Piano Booster no longer needs the Qt Xml module.
+
 1.3.1 (20 Nov 2026)
 - Section editor: choose the instrument to practise in the new "Instrument" list, with
   the same items as the list of instruments of the practice window (MIDI channels). It

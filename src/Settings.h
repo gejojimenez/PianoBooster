@@ -28,9 +28,9 @@
 #define __SETTINGS_H__
 
 #include <QSettings>
-#include <QDomDocument>
 #include "Song.h"
 #include "Notation.h"
+#include "Library.h"
 
 #define QSTR_APPNAME "pianobooster"
 
@@ -46,6 +46,8 @@ public:
     CSettings(QtWindow *mainWindow);
 
     void init(CSong* song, GuiSidePanel* sidePanel, GuiTopBar* topBar);
+    // where the settings of the songs and the folders are kept
+    void setLibrary(CLibrary *library) { m_library = library; }
 
     /// returns true if the user wants to see the note names
     bool isNoteNamesEnabled() { return m_noteNamesEnabled; }
@@ -141,7 +143,6 @@ public:
         return getFluidSoundFontNames() != value("FluidSynth/SoundFont").toStringList();
     }
 
-    void pianistActive() { m_pianistActive = true;}
     void setActiveHand(whichPart_t hand);
 
     void setChannelHands(int left, int right);
@@ -165,17 +166,11 @@ public:
 private:
 
     Q_OBJECT
-    QDomElement openDomElement(QDomElement parent, const QString & elementName, const QString & attributeName = QString());
-    void loadHandSettings();
-    void saveHandSettings();
-    void loadPartSettings();
-    void savePartSettings();
     void loadSongSettings();
     void saveSongSettings();
     void loadBookSettings();
-    void saveBookSettings();
-    void loadXmlFile();
-    void saveXmlFile();
+    void importBookConfig(const QString &folder);
+    QString currentBookFolder() { return m_bookPath + getCurrentBookName(); }
     void setDefaultValue(const QString & key, const QVariant & value );
     void setupDefaultSoundFont();
 
@@ -189,12 +184,10 @@ private:
         return "both";
     }
 
-    QDomDocument m_domDocument; //  The Complete XML DOM document for one book
-    QDomElement m_domBook;      // only one book
-    QDomElement m_domSong;      // The Elements for each song
-    QDomElement m_domHand;      // The saved settings for each hand
-
     QtWindow *m_mainWindow;
+    CLibrary *m_library = nullptr;
+    CSongSettings m_songSettings; // the settings of the current song, as loaded or last saved
+    QString m_songSettingsPath;   // the song they belong to
 
     CSong* m_song;
     GuiSidePanel* m_guiSidePanel;
@@ -209,7 +202,6 @@ private:
     QString m_currentSongName;
     QString m_warningMessage;
     QStringList m_fluidSoundFontNames = QStringList();
-    bool m_pianistActive;
 };
 
 #endif // __SETTINGS_H__
