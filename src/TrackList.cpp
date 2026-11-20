@@ -326,6 +326,14 @@ QStringList CTrackList::getAllChannelProgramNames(bool raw)
     return items;
 }
 
+QVector<int> CTrackList::getAllChannels() const
+{
+    QVector<int> channels;
+    for (const CTrackListItem &item : m_partsList)
+        channels.append(item.midiChannel());
+    return channels;
+}
+
 int CTrackList::getActiveHandIndex(whichPart_t whichPart)
 {
     int index = 0;

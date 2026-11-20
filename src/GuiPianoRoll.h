@@ -35,8 +35,12 @@
 // What the start and the end of a selection are rounded to
 enum class CSnap { Bar, Beat, HalfBeat, QuarterBeat, None };
 
-// The colour of each hand, shared by the two views
-QColor pianoRollNoteColor(const CSongNote &note, const QPalette &palette);
+// The notes practised when a channel is chosen in the list of instruments, as when
+// playing (see CNote::findHand()): those of that channel and, if it is one of the two
+// hands, those of the other hand too.
+bool isPractisedNote(const CSongNote &note, int practiseChannel);
+// The colour of a note: its hand if it is practised, grey if not. Shared by the two views.
+QColor pianoRollNoteColor(const CSongNote &note, int practiseChannel, const QPalette &palette);
 
 class CPianoRollView : public QAbstractScrollArea
 {
@@ -61,6 +65,7 @@ public:
     void setCursorTick(qint64 tick, bool follow);
 
     void setShowOtherParts(bool show);
+    void setPractiseChannel(int channel);
 
     // Zoom, as the number of pixels of a quarter note
     void zoomBy(double factor, int anchorX = -1);
@@ -114,6 +119,9 @@ private:
     CSnap m_snap = CSnap::Beat;
     double m_pixelsPerQuarter = 40.0;
     bool m_showOtherParts = true;
+    int m_practiseChannel = -1;
+    int m_lowNote = 48;  // the notes shown, from bottom to top
+    int m_highNote = 84;
 
     Drag m_drag = Drag::None;
     qint64 m_dragAnchor = 0;       // the edge of the selection that is not being moved
@@ -135,6 +143,7 @@ public:
     void setVisibleRange(qint64 first, qint64 last);
     void setCursorTick(qint64 tick);
     void setShowOtherParts(bool show);
+    void setPractiseChannel(int channel);
     QSize sizeHint() const override { return QSize(400, 48); }
 
 signals:
@@ -158,6 +167,7 @@ private:
     qint64 m_visibleLast = 0;
     qint64 m_cursorTick = -1;
     bool m_showOtherParts = true;
+    int m_practiseChannel = -1;
     QPixmap m_cache; // the notes, drawn once for each size
 };
 

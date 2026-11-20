@@ -177,6 +177,8 @@ public:
     // The programme name now starts at 1 with 0 = "(none)"
     static QString getProgramName(int program);
     QStringList getAllChannelProgramNames(bool raw=false);
+    // The MIDI channel of each item of the list, in the same order as the names
+    QVector<int> getAllChannels() const;
     int getActiveItemIndex();
     int getActiveHandIndex(whichPart_t whichPart);
 

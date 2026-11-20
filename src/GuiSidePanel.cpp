@@ -302,6 +302,22 @@ void GuiSidePanel::practisePart(qint64 id)
     partSelected(m_partCombo->currentIndex());
 }
 
+void GuiSidePanel::selectInstrument(int channel)
+{
+    if (!m_song || !m_trackList || channel < 0 || channel == m_song->getActiveChannel())
+        return;
+    const int row = m_trackList->getAllChannels().indexOf(channel);
+    if (row < 0 || row >= trackListWidget->count())
+        return;
+    // as if it had been clicked in the list (even if that row is already the current one,
+    // which happens because the list shows the right hand while the left one is active)
+    {
+        const QSignalBlocker block(trackListWidget);
+        trackListWidget->setCurrentRow(row);
+    }
+    on_trackListWidget_currentRowChanged(row);
+}
+
 void GuiSidePanel::practiseSelection(const CBarPosition &start, const CBarPosition &end)
 {
     loadParts();

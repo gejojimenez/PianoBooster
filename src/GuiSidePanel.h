@@ -77,6 +77,8 @@ public:
     void reloadPartsAfterEditing();
     // Selects a part and plays it, repeating
     void practisePart(qint64 id);
+    // Chooses the instrument to practise (a MIDI channel) in the list of instruments
+    void selectInstrument(int channel);
     // Plays a stretch of the song that is not a saved part, repeating
     void practiseSelection(const CBarPosition &start, const CBarPosition &end);
 

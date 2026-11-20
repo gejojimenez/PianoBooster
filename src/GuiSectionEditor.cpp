@@ -55,7 +55,9 @@ QPushButton *makeButton(const QString &text, const QString &toolTip)
 } // namespace
 
 GuiSectionEditor::GuiSectionEditor(CLibrary *library, const QString &songPath, const QString &songTitle,
-                                   CMidiDevice *device, double speed, QWidget *parent)
+                                   CMidiDevice *device, double speed,
+                                   const QStringList &instrumentNames, const QVector<int> &instrumentChannels, int activeChannel,
+                                   QWidget *parent)
     : QDialog(parent), m_library(library), m_songPath(songPath), m_device(device)
 {
     setWindowTitle(tr("Section Editor - %1").arg(songTitle));
@@ -88,9 +90,24 @@ GuiSectionEditor::GuiSectionEditor(CLibrary *library, const QString &songPath, c
     m_snapCombo->setCurrentIndex(1);
     m_snapCombo->setToolTip(tr("What the start and the end of the selection go to when they are dragged"));
 
+    // the instrument practised, as in the list of the practice window
+    m_instrumentCombo = new QComboBox;
+    m_instrumentCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    for (int i = 0; i < instrumentNames.size() && i < instrumentChannels.size(); ++i)
+    {
+        m_instrumentCombo->addItem(instrumentNames[i], instrumentChannels[i]);
+        if (instrumentChannels[i] == activeChannel)
+            m_instrumentCombo->setCurrentIndex(i);
+    }
+    m_instrumentCombo->setEnabled(m_instrumentCombo->count() > 1);
+    m_instrumentCombo->setToolTip(tr("The instrument (MIDI channel) to practise: its notes are shown in colour, by hand. "
+                                     "\"Practise\" also chooses it in the practice window."));
+    m_roll->setPractiseChannel(practiseChannel());
+    m_overview->setPractiseChannel(practiseChannel());
+
     m_otherPartsCheck = new QCheckBox(tr("Other instruments"));
     m_otherPartsCheck->setChecked(true);
-    m_otherPartsCheck->setToolTip(tr("Show the notes of the instruments that are not the piano part (the drums are never shown)"));
+    m_otherPartsCheck->setToolTip(tr("Show the notes of the other instruments too, in grey (the drums are not shown)"));
 
     auto *legend = new QLabel(QStringLiteral("<span style='color:#2870d8'>■</span> %1 &nbsp; "
                                              "<span style='color:#239650'>■</span> %2 &nbsp; "
@@ -107,6 +124,8 @@ GuiSectionEditor::GuiSectionEditor(CLibrary *library, const QString &songPath, c
     tools->addWidget(new QLabel(tr("Snap to:")));
     tools->addWidget(m_snapCombo);
     tools->addSpacing(16);
+    tools->addWidget(new QLabel(tr("Instrument:")));
+    tools->addWidget(m_instrumentCombo);
     tools->addWidget(m_otherPartsCheck);
     tools->addStretch(1);
     tools->addWidget(legend);
@@ -222,6 +241,10 @@ GuiSectionEditor::GuiSectionEditor(CLibrary *library, const QString &songPath, c
     connect(m_snapCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
         m_roll->setSnap(static_cast<CSnap>(m_snapCombo->currentData().toInt()));
     });
+    connect(m_instrumentCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
+        m_roll->setPractiseChannel(practiseChannel());
+        m_overview->setPractiseChannel(practiseChannel());
+    });
     connect(m_otherPartsCheck, &QCheckBox::toggled, this, [this](bool show) {
         m_roll->setShowOtherParts(show);
         m_overview->setShowOtherParts(show);
@@ -267,6 +290,11 @@ GuiSectionEditor::~GuiSectionEditor()
     // stop the sound before the song is gone
     m_player->blockSignals(true);
     m_player->stop();
+}
+
+int GuiSectionEditor::practiseChannel() const
+{
+    return m_instrumentCombo->count() > 0 ? m_instrumentCombo->currentData().toInt() : -1;
 }
 
 void GuiSectionEditor::setInitialSelection(qint64 partId, bool loopActive, const CBarPosition &loopStart, const CBarPosition &loopEnd)

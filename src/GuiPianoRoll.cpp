@@ -60,19 +60,37 @@ bool isDark(const QPalette &palette)
     return palette.color(QPalette::Base).lightnessF() < 0.5;
 }
 
-// The notes shown: those of the piano part, and the others if wanted (never the drums)
-bool isShown(const CSongNote &note, bool showOtherParts)
+// The notes shown: those practised, and the others if wanted (but not the drums, unless
+// they are the instrument practised)
+bool isShown(const CSongNote &note, int practiseChannel, bool showOtherParts)
 {
-    if (note.channel == DRUM_CHANNEL)
-        return false;
-    return showOtherParts || CNote::hasPianoPart(note.channel);
+    if (isPractisedNote(note, practiseChannel))
+        return true;
+    return showOtherParts && note.channel != DRUM_CHANNEL;
 }
 
-// The range of notes to show, with a margin and at least MIN_NOTE_SPAN notes
-void noteRange(const CSongMap *map, int &low, int &high)
+// The range of the notes shown, with a margin and at least MIN_NOTE_SPAN notes
+void noteRange(const CSongMap *map, int practiseChannel, bool showOtherParts, int &low, int &high)
 {
-    low = map ? map->lowestNote() - 2 : 48;
-    high = map ? map->highestNote() + 2 : 84;
+    bool any = false;
+    if (map)
+    {
+        for (const CSongNote &note : map->notes())
+        {
+            if (!isShown(note, practiseChannel, showOtherParts))
+                continue;
+            low = any ? std::min(low, note.note) : note.note;
+            high = any ? std::max(high, note.note) : note.note;
+            any = true;
+        }
+    }
+    if (!any)
+    {
+        low = 60;
+        high = 72;
+    }
+    low -= 2;
+    high += 2;
     if (high - low + 1 < MIN_NOTE_SPAN)
     {
         const int middle = (low + high) / 2;
@@ -93,27 +111,44 @@ QColor partColor(int index)
 
 } // namespace
 
-QColor pianoRollNoteColor(const CSongNote &note, const QPalette &palette)
+// Without a channel chosen, the piano part
+static int effectiveChannel(int practiseChannel)
+{
+    if (practiseChannel >= 0)
+        return practiseChannel;
+    return (CNote::rightHandChan() >= 0) ? CNote::rightHandChan() : CNote::leftHandChan();
+}
+
+bool isPractisedNote(const CSongNote &note, int practiseChannel)
+{
+    const int channel = effectiveChannel(practiseChannel);
+    if (channel < 0)
+        return false;
+    if (note.channel == channel)
+        return true;
+    // the other hand of the piano part
+    return CNote::hasPianoPart(channel) && CNote::hasPianoPart(note.channel);
+}
+
+QColor pianoRollNoteColor(const CSongNote &note, int practiseChannel, const QPalette &palette)
 {
     const QColor right = isDark(palette) ? QColor(90, 160, 255) : QColor(40, 110, 215);
     const QColor left = isDark(palette) ? QColor(80, 200, 120) : QColor(35, 150, 80);
     const QColor other = isDark(palette) ? QColor(130, 130, 130) : QColor(165, 165, 165);
 
-    const int rightChannel = CNote::rightHandChan();
-    const int leftChannel = CNote::leftHandChan();
-    if (note.channel == rightChannel && note.channel == leftChannel)
-    {
-        // both hands in one channel: in separate tracks, or told apart by the split point
-        const int rightTrack = CNote::rightHandTrack(note.channel);
-        if (rightTrack >= 0)
-            return note.track == rightTrack ? right : left;
-        return note.note >= MIDDLE_C ? right : left;
-    }
-    if (note.channel == rightChannel)
+    if (!isPractisedNote(note, practiseChannel))
+        return other;
+
+    // the hand, as in CNote::findHand()
+    const int channel = effectiveChannel(practiseChannel);
+    const int rightTrack = CNote::rightHandTrack(note.channel);
+    if (note.channel == channel && rightTrack >= 0)
+        return note.track == rightTrack ? right : left; // both hands in one channel, in two tracks
+    if (note.channel == CNote::rightHandChan())
         return right;
-    if (note.channel == leftChannel)
+    if (note.channel == CNote::leftHandChan())
         return left;
-    return other;
+    return note.note >= MIDDLE_C ? right : left; // split at middle C
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -134,6 +169,7 @@ void CPianoRollView::setSongMap(const CSongMap *map)
     m_map = map;
     m_selStart = m_selEnd = 0;
     m_cursorTick = -1;
+    noteRange(m_map, m_practiseChannel, m_showOtherParts, m_lowNote, m_highNote);
     updateScrollBar();
     viewport()->update();
 }
@@ -155,6 +191,14 @@ void CPianoRollView::setSelection(qint64 start, qint64 end)
 void CPianoRollView::setShowOtherParts(bool show)
 {
     m_showOtherParts = show;
+    noteRange(m_map, m_practiseChannel, m_showOtherParts, m_lowNote, m_highNote);
+    viewport()->update();
+}
+
+void CPianoRollView::setPractiseChannel(int channel)
+{
+    m_practiseChannel = channel;
+    noteRange(m_map, m_practiseChannel, m_showOtherParts, m_lowNote, m_highNote);
     viewport()->update();
 }
 
@@ -359,8 +403,8 @@ void CPianoRollView::paintEvent(QPaintEvent *event)
     if (!m_map || !m_map->isValid())
         return;
 
-    int lowNote, highNote;
-    noteRange(m_map, lowNote, highNote);
+    const int lowNote = m_lowNote;
+    const int highNote = m_highNote;
     const double rowHeight = static_cast<double>(height - gridTop()) / (highNote - lowNote + 1);
     const qint64 firstTick = firstVisibleTick();
     const qint64 lastTick = lastVisibleTick();
@@ -392,20 +436,24 @@ void CPianoRollView::paintEvent(QPaintEvent *event)
 
     drawGrid(painter, firstTick, lastTick);
 
-    // the notes, dimmed outside of the selection
+    // the notes, dimmed outside of the selection: the other instruments first, so that
+    // the notes practised are drawn over them
     const QVector<CSongNote> &notes = m_map->notes();
     const qint64 searchFrom = firstTick - m_map->maxNoteLength();
-    auto it = std::lower_bound(notes.begin(), notes.end(), searchFrom,
-                               [](const CSongNote &note, qint64 tick) { return note.tick < tick; });
+    const auto first = std::lower_bound(notes.begin(), notes.end(), searchFrom,
+                                        [](const CSongNote &note, qint64 tick) { return note.tick < tick; });
     const QColor outline = isDark(pal) ? QColor(0, 0, 0, 120) : QColor(0, 0, 0, 90);
-    for (; it != notes.end() && it->tick <= lastTick; ++it)
+    for (int pass = 0; pass < 2; ++pass)
+    for (auto it = first; it != notes.end() && it->tick <= lastTick; ++it)
     {
         const CSongNote &note = *it;
-        if (note.tick + note.length < firstTick || !isShown(note, m_showOtherParts))
+        if (isPractisedNote(note, m_practiseChannel) != (pass == 1))
+            continue;
+        if (note.tick + note.length < firstTick || !isShown(note, m_practiseChannel, m_showOtherParts))
             continue;
         if (note.note < lowNote || note.note > highNote)
             continue;
-        QColor color = pianoRollNoteColor(note, pal);
+        QColor color = pianoRollNoteColor(note, m_practiseChannel, pal);
         if (hasSelection() && (note.tick < m_selStart || note.tick >= m_selEnd))
             color = blend(color, pal.color(QPalette::Base), 0.6);
         const double x1 = xOfTick(note.tick);
@@ -705,6 +753,13 @@ void CSongOverview::setShowOtherParts(bool show)
     update();
 }
 
+void CSongOverview::setPractiseChannel(int channel)
+{
+    m_practiseChannel = channel;
+    m_cache = QPixmap();
+    update();
+}
+
 double CSongOverview::xOfTick(qint64 tick) const
 {
     const qint64 end = (m_map && m_map->endTick() > 0) ? m_map->endTick() : 1;
@@ -737,16 +792,22 @@ void CSongOverview::paintEvent(QPaintEvent *event)
         m_cache.fill(pal.color(QPalette::Base));
         QPainter cache(&m_cache);
         int lowNote, highNote;
-        noteRange(m_map, lowNote, highNote);
+        noteRange(m_map, m_practiseChannel, m_showOtherParts, lowNote, highNote);
         const double rowHeight = static_cast<double>(height() - laneHeight - 2) / (highNote - lowNote + 1);
-        for (const CSongNote &note : m_map->notes())
+        // the others first, so that the notes practised are drawn over them
+        for (int pass = 0; pass < 2; ++pass)
         {
-            if (!isShown(note, m_showOtherParts) || note.note < lowNote || note.note > highNote)
-                continue;
-            const double x1 = xOfTick(note.tick);
-            const double x2 = std::max(xOfTick(note.tick + note.length), x1 + 1.0);
-            const double y = laneHeight + 1 + (highNote - note.note) * rowHeight;
-            cache.fillRect(QRectF(x1, y, x2 - x1, std::max(1.0, rowHeight)), pianoRollNoteColor(note, pal));
+            for (const CSongNote &note : m_map->notes())
+            {
+                if (isPractisedNote(note, m_practiseChannel) != (pass == 1))
+                    continue;
+                if (!isShown(note, m_practiseChannel, m_showOtherParts) || note.note < lowNote || note.note > highNote)
+                    continue;
+                const double x1 = xOfTick(note.tick);
+                const double x2 = std::max(xOfTick(note.tick + note.length), x1 + 1.0);
+                const double y = laneHeight + 1 + (highNote - note.note) * rowHeight;
+                cache.fillRect(QRectF(x1, y, x2 - x1, std::max(1.0, rowHeight)), pianoRollNoteColor(note, m_practiseChannel, pal));
+            }
         }
     }
     painter.drawPixmap(0, 0, m_cache);

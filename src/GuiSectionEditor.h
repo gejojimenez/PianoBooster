@@ -49,8 +49,12 @@ class GuiSectionEditor : public QDialog
 public:
     // The song must be the one loaded in the practice window, whose conductor must be
     // stopped while the editor is open, because the editor plays through the same device.
+    // The instruments are the items of the list of the practice window (their names and
+    // MIDI channels), and activeChannel the one chosen there.
     GuiSectionEditor(CLibrary *library, const QString &songPath, const QString &songTitle,
-                     CMidiDevice *device, double speed, QWidget *parent = nullptr);
+                     CMidiDevice *device, double speed,
+                     const QStringList &instrumentNames, const QVector<int> &instrumentChannels, int activeChannel,
+                     QWidget *parent = nullptr);
     ~GuiSectionEditor() override;
 
     bool isValid() const { return m_map.isValid(); }
@@ -64,6 +68,8 @@ public:
     qint64 practisePartId() const { return m_practisePartId; }
     CBarPosition practiseStart() const { return m_practiseStart; }
     CBarPosition practiseEnd() const { return m_practiseEnd; }
+    // The MIDI channel of the instrument chosen in the editor (-1 if there is no list)
+    int practiseChannel() const;
 
 public slots:
     void reject() override;
@@ -119,6 +125,7 @@ private:
     CPianoRollView *m_roll;
     CSongOverview *m_overview;
     QComboBox *m_snapCombo;
+    QComboBox *m_instrumentCombo;
     QCheckBox *m_otherPartsCheck;
     QListWidget *m_partList;
     QPushButton *m_newButton;

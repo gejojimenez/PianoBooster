@@ -724,7 +724,10 @@ void QtWindow::openSectionEditor()
     // the editor plays through the same MIDI output, so the conductor must not run
     m_glWidget->stopTimerEvent();
 
-    GuiSectionEditor editor(m_library, songFile, m_song->getSongTitle(), m_song, m_song->getSpeed(), this);
+    CTrackList *trackList = m_song->getTrackList();
+    GuiSectionEditor editor(m_library, songFile, m_song->getSongTitle(), m_song, m_song->getSpeed(),
+                            trackList->getAllChannelProgramNames(), trackList->getAllChannels(),
+                            m_song->getActiveChannel(), this);
     if (!editor.isValid())
     {
         QMessageBox::warning(this, tr("Section Editor"),
@@ -736,6 +739,8 @@ void QtWindow::openSectionEditor()
                                    m_song->getPlayFrom(), m_song->getPlayUpto());
         if (editor.exec() == QDialog::Accepted)
         {
+            // the instrument chosen in the editor, then the section
+            m_sidePanel->selectInstrument(editor.practiseChannel());
             if (editor.practisePartId() >= 0)
                 m_sidePanel->practisePart(editor.practisePartId());
             else

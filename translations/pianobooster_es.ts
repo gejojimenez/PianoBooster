@@ -2097,7 +2097,9 @@ Los archivos no se borran, y las canciones conservan sus favoritas y estadístic
     <message><source>Free</source><translation>Libre</translation></message>
     <message><source>What the start and the end of the selection go to when they are dragged</source><translation>A qué se ajustan el inicio y el final de la selección al arrastrarlos</translation></message>
     <message><source>Other instruments</source><translation>Otros instrumentos</translation></message>
-    <message><source>Show the notes of the instruments that are not the piano part (the drums are never shown)</source><translation>Mostrar las notas de los instrumentos que no son la parte de piano (la batería nunca se muestra)</translation></message>
+    <message><source>Show the notes of the other instruments too, in grey (the drums are not shown)</source><translation>Mostrar también las notas de los demás instrumentos, en gris (la batería no se muestra)</translation></message>
+    <message><source>The instrument (MIDI channel) to practise: its notes are shown in colour, by hand. "Practise" also chooses it in the practice window.</source><translation>El instrumento (canal MIDI) que se practica: sus notas se muestran en color, por mano. «Practicar» también lo elige en la ventana de práctica.</translation></message>
+    <message><source>Instrument:</source><translation>Instrumento:</translation></message>
     <message><source>Right hand</source><translation>Mano derecha</translation></message>
     <message><source>Left hand</source><translation>Mano izquierda</translation></message>
     <message><source>Others</source><translation>Otros</translation></message>
