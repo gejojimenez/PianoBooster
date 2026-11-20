@@ -80,6 +80,12 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
   * The instrument (MIDI channel) to practise is chosen in the editor, starting with
     the one of the practice window. Its notes are coloured by hand and the others are
     grey or hidden. "Practise" also chooses it in the practice window.
+* **1.3.2 – Song settings in the library database**
+  * The hand, speed and MIDI channels of each song, and the last song of each folder,
+    are kept in the library database instead of a "pb.cfg" file in each folder.
+  * Copies of the same song in different folders share their settings.
+  * The first time a folder with a "pb.cfg" file is opened, its settings are moved to
+    the database and the file is deleted.
 
 ## Building
 
