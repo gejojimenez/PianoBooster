@@ -182,6 +182,24 @@ int CNotation::nextMergeSlot()
     return nearestIndex;
 }
 
+qint64 CNotation::accidentalBarLength() const
+{
+    return (CMidiFile::getPulsesPerQuarterNote() * 4) / m_accidentalTimeSigBottom * m_accidentalTimeSigTop;
+}
+
+// Moves on to the bar that is playing at this time (absolute, in ppqn ticks)
+void CNotation::advanceAccidentalBars(qint64 time)
+{
+    const qint64 barLength = accidentalBarLength();
+    if (barLength <= 0)
+        return;
+    while (time >= m_accidentalBarStart + barLength)
+    {
+        m_accidentalBarStart += barLength;
+        m_accidentalBarCounter++;
+    }
+}
+
 accidentalModifer_t CNotation::detectSuppressedNatural(int note)
 {
     if (note <= 0 || note +1 >= MAX_MIDI_NOTES)
@@ -189,11 +207,9 @@ accidentalModifer_t CNotation::detectSuppressedNatural(int note)
 
     accidentalModifer_t modifer = PB_ACCIDENTAL_MODIFER_noChange;
 
-    while (m_earlyBarChangeDelta >= m_bar.getBarLength())
-    {
-        m_earlyBarChangeDelta -= m_bar.getBarLength();
-        m_earlyBarChangeCounter++;
-    }
+    // We want to detect the bar change a little early
+    const qint64 cfg_earlyBarLead = CMidiFile::ppqnAdjust(8);
+    advanceAccidentalBars(m_noteStreamTime + cfg_earlyBarLead);
 
     CNoteState * pNoteState = &m_noteState[note];
     CNoteState * pBackLink = pNoteState->getBackLink();
@@ -201,7 +217,7 @@ accidentalModifer_t CNotation::detectSuppressedNatural(int note)
     int direction = -CStavePos::getStaveAccidentalDirection(note);
     ppDEBUG_NOTATION(("Note %d %d %d", note, direction, pBackLink));
     // check if this note has occurred in this bar before
-    if (pNoteState->getBarChange() == m_earlyBarChangeCounter)
+    if (pNoteState->getBarChange() == m_accidentalBarCounter)
     {
         if (pBackLink)
         {
@@ -219,7 +235,7 @@ accidentalModifer_t CNotation::detectSuppressedNatural(int note)
     {
         // we are display a accidental so force the note above (or below) to display
         m_noteState[note + direction].setBackLink(pNoteState); // point back to this note
-        m_noteState[note + direction].setBarChange(m_earlyBarChangeCounter);
+        m_noteState[note + direction].setBarChange(m_accidentalBarCounter);
         ppDEBUG_NOTATION(("setting backlink %d %d", note + direction, direction));
     }
     if (pBackLink)
@@ -228,7 +244,7 @@ accidentalModifer_t CNotation::detectSuppressedNatural(int note)
         pBackLink->setBarChange(-1); // this prevents further suppression on the original note
     }
 
-    pNoteState->setBarChange(m_earlyBarChangeCounter);
+    pNoteState->setBarChange(m_accidentalBarCounter);
     return modifer;
 }
 
@@ -288,7 +304,6 @@ void CNotation::findNoteSlots()
 
         m_currentDeltaTime += midi.deltaTime();
         m_noteStreamTime += midi.deltaTime();
-        m_earlyBarChangeDelta += midi.deltaTime();
         if (midi.type() == MIDI_PB_chordSeparator || midi.type() == MIDI_PB_EOF)
         {
             if (m_currentSlot.length() > 0)
@@ -308,7 +323,16 @@ void CNotation::findNoteSlots()
 
         else if (midi.type() == MIDI_PB_timeSignature)
         {
-            m_bar.setTimeSig(midi.data1(), midi.data2());
+            // finish the bars of the previous time signature, then a new bar starts here
+            // (unless one has just started), like the bar lines of the beat markers
+            advanceAccidentalBars(m_noteStreamTime);
+            if (m_noteStreamTime > m_accidentalBarStart)
+            {
+                m_accidentalBarCounter++;
+                m_accidentalBarStart = m_noteStreamTime;
+            }
+            m_accidentalTimeSigTop = (midi.data1() > 0) ? midi.data1() : 4;
+            m_accidentalTimeSigBottom = (midi.data2() > 0) ? midi.data2() : 4;
             // the beat markers use it once they reach this time
             m_markerTimeSigChanges.push_back({ m_noteStreamTime, midi.data1(), midi.data2() });
         }
@@ -404,8 +428,6 @@ void CNotation::midiEventInsert(CMidiEvent event)
 
 void CNotation::reset()
 {
-    const int cfg_earlBarLead = CMidiFile::ppqnAdjust(8);
-
     m_currentDeltaTime = 0;
     m_midiInputQueue->clear();
     m_slotQueue->clear();
@@ -422,10 +444,10 @@ void CNotation::reset()
     m_pendingBarMarker = false;
     m_markerBarNumber = 0;
     m_pendingBarMarkerTime = 0;
-    m_earlyBarChangeCounter = 0;
-    m_earlyBarChangeDelta = cfg_earlBarLead; // We want to detect the bar change early
-
-    m_bar.reset();
+    m_accidentalBarCounter = 0;
+    m_accidentalBarStart = 0;
+    m_accidentalTimeSigTop = 4;
+    m_accidentalTimeSigBottom = 4;
     m_findScrollerChord.reset();
     for (auto &noteState : m_noteState)
         noteState.clear();

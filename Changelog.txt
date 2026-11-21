@@ -1,3 +1,9 @@
+1.3.5 (21 Nov 2026)
+- Score: the sharps and flats are shown again at the first note of each bar after a
+  time signature change (e.g. from 4/4 to 12/8). The bars used to show an accidental
+  only once per bar now follow the drawn bar lines, instead of keeping the length of
+  the first bars and drifting out of step with them.
+
 1.3.4 (21 Nov 2026)
 - The language list of the Preferences uses QRegularExpression instead of the deprecated
   QRegExp, so the Qt 6 build no longer needs the Qt5Compat module (Qt6Core5Compat.dll

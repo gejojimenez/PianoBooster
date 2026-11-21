@@ -225,12 +225,17 @@ private:
     qint64 m_pendingBarMarkerTime;
     int m_beatPerBarCounter;          // the current beat in the bar, counting from 0
     int m_markerBarNumber;            // the current bar of the beat markers, counting from 0
-    int m_earlyBarChangeCounter;
-    qint64 m_earlyBarChangeDelta; // Counts the ppqn in one bar
+    // The bars used to show an accidental only once in each bar. They follow the same
+    // rules as the bar lines: a new time signature always starts a new bar.
+    void advanceAccidentalBars(qint64 time);
+    qint64 accidentalBarLength() const;
+    int m_accidentalBarCounter;       // the current bar of the notes, counting from 0
+    qint64 m_accidentalBarStart;      // absolute time of the start of that bar
+    int m_accidentalTimeSigTop;       // the time signature of that bar
+    int m_accidentalTimeSigBottom;
     CSlot m_mergeSlots[2];
     int m_displayChannel;
     CFindChord m_findScrollerChord;
-    CBar m_bar;
     CNoteState m_noteState[MAX_MIDI_NOTES];
     static bool m_cfg_displayCourtesyAccidentals;
     static int cfg_param[NOTATE_MAX_PARAMS];
