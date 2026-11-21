@@ -1,3 +1,8 @@
+1.3.7 (21 Nov 2026)
+- View > Show Piano Keyboard: when listening, the keyboard lights up the notes that are
+  sounding. It used to light up the oldest notes still on the score, several beats
+  behind the music, because nobody changes the colour of the notes when just listening.
+
 1.3.6 (21 Nov 2026)
 - Score: Preferences > "Note display" can also show a trail after each note head, a
   little narrower and transparent, that lasts as long as the note sounds (like a piano

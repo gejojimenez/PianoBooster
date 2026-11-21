@@ -5,7 +5,7 @@
 // Increase it whenever a change is made, and record the change in Changelog.txt.
 #define PB_VERSION_MAJOR 1
 #define PB_VERSION_MINOR 3
-#define PB_VERSION_PATCH 6
+#define PB_VERSION_PATCH 7
 
 // The version as a string, e.g. "1.0.2" (built from the numbers above, do not edit)
 #define PB_VERSION_TO_STRING_(x) #x

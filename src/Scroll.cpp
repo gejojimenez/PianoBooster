@@ -330,8 +330,19 @@ void CScroll::refresh()
 
 bool CScroll::getKeyboardInfo(int *notes)
 {
-    // the slots kept only for their trails have already gone past
-    const int firstSlot = qMin(m_trailOnlySlots, m_scrollQueue->length());
+    // Skip the slots that have already gone past the play zone. Nobody changes the colour of
+    // their notes when just listening, so they would still be lit up on the keyboard
+    // (several beats behind the music, as far as the left edge of the score).
+    const float lateEdgeX = Cfg::playZoneX() - static_cast<float>(Cfg::playZoneLate()) * HORIZONTAL_SPACING_FACTOR;
+    float slotX = Cfg::playZoneX() + deltaAdjustF(m_deltaTail) * m_noteSpacingFactor;
+    int firstSlot = 0;
+    while (firstSlot < m_scrollQueue->length())
+    {
+        slotX += static_cast<float>(m_scrollQueue->index(firstSlot).getDeltaTime()) * m_noteSpacingFactor;
+        if (slotX >= lateEdgeX)
+            break;
+        firstSlot++;
+    }
     int stoppedScrollIdx = -1;
     for(int i=firstSlot; i<m_scrollQueue->length(); ++i) {
         CSlotDisplayList &info = *m_scrollQueue->indexPtr(i);
