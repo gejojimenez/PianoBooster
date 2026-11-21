@@ -1,3 +1,10 @@
+1.3.9 (21 Nov 2026)
+- Score: the note names and bar numbers no longer wobble from side to side against the
+  notes as the score scrolls. They are drawn with a polygon font at the exact position,
+  like the notes, instead of a bitmap font that is put on whole screen pixels.
+- With the display scaling of the system (e.g. 150%), the note names are centred on
+  their notes; they were a little to the left. Their size is the same as before.
+
 1.3.8 (21 Nov 2026)
 - Smoother scrolling of the score: each frame is drawn as soon as the last one is on
   the screen (one frame for each refresh of the screen), instead of when a timer asks
