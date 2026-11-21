@@ -85,6 +85,10 @@ public:
         return m_followThroughErrorsEnabled;
     }
 
+    /// returns true if the user wants a trail after each note head showing how long the note sounds
+    bool isNoteDurationTrailEnabled() { return m_noteDurationTrail; }
+    void setNoteDurationTrail(bool value);
+
     void updateTutorPage();
     void openSongFile(const QString & filename);
     QString getCurrentSongName() { return m_currentSongName; }
@@ -197,6 +201,7 @@ private:
     bool m_tutorPagesEnabled;
     bool m_advancedMode;
     bool m_followThroughErrorsEnabled;
+    bool m_noteDurationTrail;
     QString m_bookPath;
     QString m_currentBookName;
     QString m_currentSongName;

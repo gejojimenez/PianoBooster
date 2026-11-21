@@ -1157,6 +1157,10 @@
         <source>After the Beat</source>
         <translation>Después del Compás</translation>
     </message>
+    <message><source>Note display:</source><translation>Mostrar las notas:</translation></message>
+    <message><source>Show only the note heads, or also a trail that lasts as long as each note sounds</source><translation>Mostrar solo las cabezas de las notas, o también una estela que dura lo que suena cada nota</translation></message>
+    <message><source>Note heads only</source><translation>Solo las cabezas de las notas</translation></message>
+    <message><source>Note heads with duration trail</source><translation>Cabezas con estela de duración</translation></message>
     <message>
         <location filename="../src/GuiPreferencesDialog.cpp" line="83"/>
         <source>System Language</source>

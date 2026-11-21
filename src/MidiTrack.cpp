@@ -387,6 +387,28 @@ void CMidiTrack::decodeSystemMessage( byte_t status, byte_t data1 )
     }
 }
 
+// The note on event holds its start time until the note ends, then its duration
+void CMidiTrack::closeNoteDuration(CMidiEvent* noteOnEventPtr)
+{
+    if (noteOnEventPtr)
+        noteOnEventPtr->setDuration(m_currentTime - noteOnEventPtr->getDuration());
+}
+
+// Notes that never got a note off end with the track
+void CMidiTrack::closeOpenNotes()
+{
+    for (int chan = 0; chan < MAX_MIDI_CHANNELS; chan++)
+    {
+        if (m_noteOnEventPtr[chan] == nullptr)
+            continue;
+        for (int pitch = 0; pitch < MAX_MIDI_NOTES; pitch++)
+        {
+            closeNoteDuration(m_noteOnEventPtr[chan][pitch]);
+            m_noteOnEventPtr[chan][pitch] = nullptr;
+        }
+    }
+}
+
 void CMidiTrack::noteOffEvent(CMidiEvent &event, int deltaTime, int channel, int pitch, int velocity)
 {
     createNoteEventPtr(channel);
@@ -395,9 +417,8 @@ void CMidiTrack::noteOffEvent(CMidiEvent &event, int deltaTime, int channel, int
 
     if (noteOnEventPtr)
     {
-        int duration = m_currentTime - noteOnEventPtr->getDuration();
-        noteOnEventPtr->setDuration(duration);
-        //ppLogDebug ("NOTE OFF chan %d pitch %d  currentTime %d Duration %d", channel + 1, pitch, m_currentTime, duration);
+        closeNoteDuration(noteOnEventPtr);
+        //ppLogDebug ("NOTE OFF chan %d pitch %d  currentTime %d Duration %d", channel + 1, pitch, m_currentTime, noteOnEventPtr->getDuration());
     }
     else
     {
@@ -465,6 +486,9 @@ void CMidiTrack::decodeMidiEvent()
 
             // Save a reference to the note on event
             createNoteEventPtr(channel);
+            // The same note is struck again without a note off, so the previous one ends here
+            // (otherwise it keeps the start time as its duration)
+            closeNoteDuration(m_noteOnEventPtr[channel] [data1]);
             m_noteOnEventPtr[channel] [data1]  = eventPtr;
         }
         else
@@ -521,7 +545,10 @@ void CMidiTrack::decodeTrack()
     while (true)
     {
         if (m_trackLengthCounter== 0)
+        {
+            closeOpenNotes();
             break;
+        }
         if (m_trackEventQueue->space() <= 1)
         {
             ppLogError("Out of Space");
