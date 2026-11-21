@@ -1,3 +1,9 @@
+1.3.10 (21 Nov 2026)
+- Smoother edges on the score: the anti-aliasing uses 16 samples (or the most the
+  graphics card has) instead of 4. With 4, an edge had only 5 levels of brightness, so
+  the edges of the scrolling notes and trails flickered, and thin lines of the text
+  (like the sharp of the note names) were partly lost.
+
 1.3.9 (21 Nov 2026)
 - Score: the note names and bar numbers no longer wobble from side to side against the
   notes as the score scrolls. They are drawn with a polygon font at the exact position,

@@ -90,7 +90,10 @@ QtWindow::QtWindow()
 
     QString antiAliasingSetting = m_settings->value("anti-aliasing").toString();
     if (antiAliasingSetting.isEmpty() || antiAliasingSetting=="on"){
-        fmt.setSamples(4);
+        // 16 samples (or the most the graphics card has): with 4 an edge has only 5 levels of
+        // brightness, so the edges of the scrolling notes flickered and thin lines of the text
+        // (like the sharp of the note names) were partly lost
+        fmt.setSamples(16);
     }
 
     QSurfaceFormat::setDefaultFormat(fmt);
