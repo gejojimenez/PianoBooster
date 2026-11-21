@@ -28,8 +28,7 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QJsonValue>
-
-#include <QRegExp> // deprecated, from compat module in Qt 6
+#include <QRegularExpression>
 
 #include "GuiPreferencesDialog.h"
 #include "GlView.h"
@@ -91,11 +90,12 @@ void GuiPreferencesDialog::initLanguageCombo(){
     QDir dirLang(localeDirectory);
     dirLang.setFilter(QDir::Files | QDir::Hidden | QDir::NoDotAndDotDot);
     QFileInfoList listLang = dirLang.entryInfoList();
+    const QRegularExpression rx("^pianobooster_(.*)\\.qm$");
     for (QFileInfo fileInfo : listLang) {
 
-        QRegExp rx("(pianobooster_)(.*)(.qm)");
-        if (rx.indexIn(fileInfo.fileName())!=-1){
-            QString lang_code = rx.cap(2);
+        const QRegularExpressionMatch match = rx.match(fileInfo.fileName());
+        if (match.hasMatch()){
+            QString lang_code = match.captured(1);
 
             if (lang_code=="blank") continue;
 

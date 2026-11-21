@@ -1,3 +1,10 @@
+1.3.4 (21 Nov 2026)
+- The language list of the Preferences uses QRegularExpression instead of the deprecated
+  QRegExp, so the Qt 6 build no longer needs the Qt5Compat module (Qt6Core5Compat.dll
+  is no longer in the Windows package).
+- Windows package: stops with an error if pianobooster.exe still needs a Qt module it
+  no longer uses (Qt6Core5Compat, Qt6Xml or Qt6Network), which means it is out of date.
+
 1.3.3 (21 Nov 2026)
 - Windows package (tools/package-windows.sh): without the libraries PianoBooster does not
   use: Qt6Network and Qt6Xml, the Qt plugins for touch input, network information and
