@@ -86,6 +86,14 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
   * Copies of the same song in different folders share their settings.
   * The first time a folder with a "pb.cfg" file is opened, its settings are moved to
     the database and the file is deleted.
+* **1.3.3 – Smaller Windows package**
+  * The package no longer includes the Qt libraries and plugins PianoBooster does not
+    use (Qt6Network, Qt6Xml, network and TLS plugins...): 11 DLLs fewer.
+* **1.3.4 – No more Qt5Compat**
+  * The Qt 6 build no longer needs the Qt5Compat module, so `Qt6Core5Compat.dll` is not
+    in the Windows package and `qt6-5compat` is not a build dependency any more.
+  * The packaging script stops if the executable is out of date and still needs a Qt
+    module that is no longer used.
 
 ## Building
 
