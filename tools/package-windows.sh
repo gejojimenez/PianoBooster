@@ -38,12 +38,18 @@ cp "$BIN_DIR/fonts/"*.ttf "$OUT_DIR/fonts/"
 cp "$BIN_DIR/translations/"*.qm "$BIN_DIR/translations/langs.json" "$OUT_DIR/translations/"
 cp "$SRC_DIR/README.md" "$SRC_DIR/license.txt" "$SRC_DIR/gplv3.txt" "$SRC_DIR/Changelog.txt" "$OUT_DIR/"
 
-# Qt libraries and plugins (platform, styles, image formats...)
-"$MSYS_BIN/windeployqt6.exe" --release --no-compiler-runtime "$OUT_DIR/pianobooster.exe"
-
-# Only the SQLite database driver is used (by the song library); the others would
-# pull in the client libraries of other databases.
-find "$OUT_DIR/sqldrivers" -name '*.dll' ! -name 'qsqlite.dll' -delete 2>/dev/null || true
+# Qt libraries and plugins (platform, styles, image formats, SQLite driver)
+# - Not deployed: the plugins for touch input (generic), network information and TLS,
+#   which would only pull in Qt6Network, not used by PianoBooster.
+# - Only the SQLite database driver is used (by the song library); the others would
+#   pull in the client libraries of other databases.
+# - The Qt translations are not in MSYS2 by default (package qt6-translations), and the
+#   DXC compiler is only for Direct3D 12, not used.
+"$MSYS_BIN/windeployqt6.exe" --release --no-compiler-runtime --no-translations \
+    --no-system-dxc-compiler --no-opengl-sw \
+    --skip-plugin-types generic,networkinformation,tls \
+    --exclude-plugins qsqlibase,qsqlmysql,qsqlodbc,qsqlpsql \
+    "$OUT_DIR/pianobooster.exe"
 
 # Every other DLL coming from MSYS2 (FluidSynth, FTGL, GCC runtime...), for the
 # executable and for the Qt plugins; repeat until no new dependency appears.
