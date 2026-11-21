@@ -64,9 +64,21 @@ CGLView::CGLView(QtWindow* parent, CSettings* settings)
     m_song = new CSong();
     m_score = new CScore(m_settings);
     m_displayUpdateTicks = 0;
+    m_realtimeNsecs = 0;
+    m_lastPaintNsecs = 0;
     m_cfg_openGlOptimise = 0; // zero is no GlOptimise
     m_eventBits = 0;
     BENCHMARK_INIT();
+
+    // Draw the next frame as soon as the last one is on the screen, so that there is one frame
+    // for each refresh of the screen and each one moves the score on by the same time
+    connect(this, &QOpenGLWidget::frameSwapped, this, &CGLView::onFrameSwapped);
+}
+
+void CGLView::onFrameSwapped()
+{
+    if (m_allowedTimerEvent)
+        update();
 }
 
 CGLView::~CGLView()
@@ -101,6 +113,7 @@ void CGLView::paintGL()
     BENCHMARK(2, "enter");
 
     m_displayUpdateTicks = 0;
+    m_lastPaintNsecs = m_realtime.nsecsElapsed();
 
     if (m_fullRedrawFlag)
         m_forcefullRedraw = m_forceRatingRedraw = m_forceBarRedraw = REDRAW_COUNT;
@@ -368,16 +381,23 @@ void CGLView::initializeGL()
 
     // increased the tick time for MIDI handling
 
-    m_timer.start(Cfg::tickRate, this );
+    // A precise timer: the normal (coarse) timers of Windows only go off every 15.6 msec
+    m_timer.start(Cfg::tickRate, Qt::PreciseTimer, this );
 
     m_realtime.start();
+    m_realtimeNsecs = 0;
 
     //startMediaTimer(12, this );
 }
 
 void CGLView::updateMidiTask()
 {
-    const auto ticks = m_realtime.restart();
+    // Move the song on by the whole milliseconds that have passed, and keep the part of a
+    // millisecond left over for the next time (restart() would lose it every time,
+    // so the steps were uneven and the music ran a little slow)
+    const qint64 nsecsPerMsec = 1000000;
+    const qint64 ticks = (m_realtime.nsecsElapsed() - m_realtimeNsecs) / nsecsPerMsec;
+    m_realtimeNsecs += ticks * nsecsPerMsec;
     m_displayUpdateTicks += ticks;
     m_eventBits |= m_song->task(ticks);
 }
@@ -395,6 +415,16 @@ void CGLView::timerEvent(QTimerEvent *event)
 
     updateMidiTask();
     BENCHMARK(1, "m_song task");
+
+    // The frames are drawn one after the other (see onFrameSwapped()). Start them again if no
+    // frame has been drawn for a while: at the start, after stopTimerEvent(), or when the
+    // window was hidden.
+    const qint64 frameTimeOut = 100 * 1000000; // 100 msec
+    if (m_realtime.nsecsElapsed() - m_lastPaintNsecs > frameTimeOut)
+    {
+        m_lastPaintNsecs = m_realtime.nsecsElapsed(); // ask only once each time
+        update();
+    }
 
     if (m_displayUpdateTicks < SCREEN_FRAME_RATE)
         return;
@@ -421,8 +451,7 @@ void CGLView::timerEvent(QTimerEvent *event)
     else
         m_fullRedrawFlag = false;
 
-    //glDraw();
-    update();
+    // no update() here: the next frame is already on its way (see onFrameSwapped())
     m_fullRedrawFlag = true;
     BENCHMARK(19, "timer exit");
 }

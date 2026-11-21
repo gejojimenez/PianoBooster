@@ -66,6 +66,9 @@ protected:
     void mouseMoveEvent(QMouseEvent *event);
     void renderText(double x, double y, double z, const QString &str, const QFont & font);
 
+private slots:
+    void onFrameSwapped();
+
 private:
     void drawDisplayText();
     void drawTimeSignature();
@@ -83,6 +86,8 @@ private:
     CScore* m_score;
     QBasicTimer m_timer;
     QElapsedTimer m_realtime;
+    qint64 m_realtimeNsecs;      // the time (of m_realtime) the song has been moved on to
+    qint64 m_lastPaintNsecs;     // when the last frame was drawn
     qint64 m_displayUpdateTicks;
     CRating* m_rating;
     QFont m_timeSigFont;

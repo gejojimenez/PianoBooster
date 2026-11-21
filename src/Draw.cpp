@@ -90,7 +90,13 @@ CDraw::CDraw(CSettings* settings)
     for (int i=0;i<listPathFonts.size();i++){
         QFile file(listPathFonts.at(i));
         if (file.exists()){
-            font = new FTBitmapFont(listPathFonts.at(i).toStdString().c_str());
+            // A polygon font is drawn at the exact (sub-pixel) position like the note heads.
+            // A bitmap font is put on whole screen pixels, so the note names and bar numbers
+            // wobbled from side to side against the notes as the score scrolled.
+            font = new FTPolygonFont(listPathFonts.at(i).toStdString().c_str());
+            // The text is drawn inside the display lists of the score, and display lists
+            // cannot be made inside them
+            font->UseDisplayList(false);
             break;
         }
     }
@@ -151,10 +157,21 @@ void  CDraw::drawStaveExtentsion(CSymbol symbol, float x, int noteWidth, bool pl
 #ifndef NO_USE_FTGL
 void CDraw::renderText(float x, float y, const char* s)
 {
-  const auto w = font->Advance(s);
-  const auto h = font->Descender();
-  glRasterPos2f(x - w/2, y - h);
+  // The font sizes are in screen pixels (as the bitmap font used before), but the score is
+  // drawn in pixels of the window, which are bigger with the display scaling of the system
+  // (e.g. 150%), so scale the text down to keep its size.
+  // It is also made a little bigger than the bitmap font was (about 14 screen pixels high
+  // instead of 11): the polygon font is anti-aliased, and at the smaller size its thinnest
+  // lines (like the sharp of "Fa#") were narrower than a pixel and partly lost.
+  const float textSizeFactor = 1.3f;
+  const float scale = textSizeFactor / static_cast<float>(qApp->devicePixelRatio());
+  const float w = font->Advance(s) * scale;
+  const float h = font->Descender() * scale;
+  glPushMatrix();
+  glTranslatef(x - w/2, y - h, 0.0f);
+  glScalef(scale, scale, 1.0f);
   font->Render(s);
+  glPopMatrix();
 }
 #endif
 
