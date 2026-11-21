@@ -99,6 +99,16 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
     flats are shown again on the first note of each bar. Before, the bars used for the
     accidentals drifted out of step with the bar lines, and the sign appeared on a note
     in the middle of the bar.
+* **1.3.6 – Note duration trail**
+  * Preferences > "Note display" can also show a transparent trail after each note head,
+    a little narrower than it, that lasts as long as the note sounds (like a piano roll).
+  * The trail is drawn whole across bar lines, and a long note stays on the score until
+    its trail has gone past the left edge, so it never disappears while it is sounding.
+  * MIDI files with a note struck again before its note off, or without a note off, no
+    longer give that note a huge duration.
+* **1.3.7 – Piano keyboard in time when listening**
+  * View > Show Piano Keyboard lights up the notes that are sounding when listening.
+    Before, it lit up the oldest notes still on the score, several beats behind.
 
 ## Building
 
