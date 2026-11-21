@@ -109,6 +109,21 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
 * **1.3.7 – Piano keyboard in time when listening**
   * View > Show Piano Keyboard lights up the notes that are sounding when listening.
     Before, it lit up the oldest notes still on the score, several beats behind.
+* **1.3.8 – Smoother scrolling and exact tempo**
+  * A frame is drawn for each refresh of the screen, so the score scrolls more evenly
+    (measured within 0.24 pixels of an even motion; it was 0.71).
+  * The music and the score no longer run about 6% slower than the song: the parts of a
+    millisecond were lost every time the time was measured.
+* **1.3.9 – Note names that do not wobble**
+  * The note names and bar numbers are drawn at the exact position of their notes, so
+    they no longer wobble from side to side as the score scrolls. With the display
+    scaling of Windows (e.g. 150%) they are also centred on their notes.
+* **1.3.10 – Smoother edges**
+  * The anti-aliasing uses 16 samples instead of 4, so the edges of the scrolling notes
+    and trails no longer flicker.
+* **1.3.11 – Bigger note names**
+  * The note names and bar numbers are a little bigger, so thin lines like the sharp of
+    "Fa#" are drawn whole.
 
 ## Building
 
