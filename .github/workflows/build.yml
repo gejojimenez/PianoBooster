@@ -66,7 +66,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install build-essential cmake pkg-config libftgl-dev qt6-base-dev libqt6core5compat6-dev qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools librtmidi-dev fluid-soundfont-gm libfluidsynth-dev
+          sudo apt-get install build-essential cmake pkg-config libftgl-dev qt6-base-dev qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools librtmidi-dev fluid-soundfont-gm libfluidsynth-dev
           sudo apt-get install libfuse2 qmake6
       - name: Install linuxdeploy
         run: |
