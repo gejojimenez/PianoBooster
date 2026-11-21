@@ -159,8 +159,12 @@ void CDraw::renderText(float x, float y, const char* s)
 {
   // The font sizes are in screen pixels (as the bitmap font used before), but the score is
   // drawn in pixels of the window, which are bigger with the display scaling of the system
-  // (e.g. 150%), so scale the text down to keep its size
-  const float scale = 1.0f / static_cast<float>(qApp->devicePixelRatio());
+  // (e.g. 150%), so scale the text down to keep its size.
+  // It is also made a little bigger than the bitmap font was (about 14 screen pixels high
+  // instead of 11): the polygon font is anti-aliased, and at the smaller size its thinnest
+  // lines (like the sharp of "Fa#") were narrower than a pixel and partly lost.
+  const float textSizeFactor = 1.3f;
+  const float scale = textSizeFactor / static_cast<float>(qApp->devicePixelRatio());
   const float w = font->Advance(s) * scale;
   const float h = font->Descender() * scale;
   glPushMatrix();
