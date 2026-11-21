@@ -94,6 +94,11 @@ See [Changelog.txt](Changelog.txt) for the full list, by version.
     in the Windows package and `qt6-5compat` is not a build dependency any more.
   * The packaging script stops if the executable is out of date and still needs a Qt
     module that is no longer used.
+* **1.3.5 – Accidentals after time signature changes**
+  * After a change of time signature (for example from 4/4 to 12/8), the sharps and
+    flats are shown again on the first note of each bar. Before, the bars used for the
+    accidentals drifted out of step with the bar lines, and the sign appeared on a note
+    in the middle of the bar.
 
 ## Building
 
