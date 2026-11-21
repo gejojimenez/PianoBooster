@@ -51,6 +51,15 @@ cp "$SRC_DIR/README.md" "$SRC_DIR/license.txt" "$SRC_DIR/gplv3.txt" "$SRC_DIR/Ch
     --exclude-plugins qsqlibase,qsqlmysql,qsqlodbc,qsqlpsql \
     "$OUT_DIR/pianobooster.exe"
 
+# Qt modules PianoBooster no longer uses (Qt6Core5Compat since 1.3.4): windeployqt only
+# deploys them if the executable needs them, which means that it is out of date.
+for module in Qt6Core5Compat Qt6Xml Qt6Network; do
+    if [ -f "$OUT_DIR/$module.dll" ]; then
+        echo "error: $module.dll is needed by pianobooster.exe: rebuild it first (cmake --build build)" >&2
+        exit 1
+    fi
+done
+
 # Every other DLL coming from MSYS2 (FluidSynth, FTGL, GCC runtime...), for the
 # executable and for the Qt plugins; repeat until no new dependency appears.
 while true; do
