@@ -1,3 +1,16 @@
+1.3.7 (21 Nov 2026)
+- View > Show Piano Keyboard: when listening, the keyboard lights up the notes that are
+  sounding. It used to light up the oldest notes still on the score, several beats
+  behind the music, because nobody changes the colour of the notes when just listening.
+
+1.3.6 (21 Nov 2026)
+- Score: Preferences > "Note display" can also show a trail after each note head, a
+  little narrower and transparent, that lasts as long as the note sounds (like a piano
+  roll). It is drawn whole across bar lines, and a long note is kept on the score until
+  its trail has gone past the left edge, so it never disappears while it is sounding.
+- MIDI files: a note struck again before its note off ends the previous one there, and
+  the notes without a note off end with their track (they used to get a huge duration).
+
 1.3.5 (21 Nov 2026)
 - Score: the sharps and flats are shown again at the first note of each bar after a
   time signature change (e.g. from 4/4 to 12/8). The bars used to show an accidental

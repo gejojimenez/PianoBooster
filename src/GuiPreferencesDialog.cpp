@@ -44,6 +44,8 @@ GuiPreferencesDialog::GuiPreferencesDialog(QWidget *parent)
     followStopPointCombo->addItem(tr("Automatic (Recommended)"));
     followStopPointCombo->addItem(tr("On the Beat"));
     followStopPointCombo->addItem(tr("After the Beat"));
+    noteDisplayCombo->addItem(tr("Note heads only"));
+    noteDisplayCombo->addItem(tr("Note heads with duration trail"));
 }
 
 void GuiPreferencesDialog::initLanguageCombo(){
@@ -153,6 +155,7 @@ void GuiPreferencesDialog::init(CSong* song, CSettings* settings, CGLView * glVi
     showColoredNotesCheck->setChecked(m_settings->isColoredNotesEnabled());
 
     followStopPointCombo->setCurrentIndex(m_song->cfg_stopPointMode);
+    noteDisplayCombo->setCurrentIndex(m_settings->isNoteDurationTrailEnabled() ? 1 : 0);
 
     initLanguageCombo();
 }
@@ -168,6 +171,7 @@ void GuiPreferencesDialog::accept()
     m_settings->setColoredNotes( showColoredNotesCheck->isChecked());
     m_song->cfg_stopPointMode = static_cast<stopPointMode_t> (followStopPointCombo->currentIndex());
     m_settings->setValue("Score/StopPointMode", m_song->cfg_stopPointMode );
+    m_settings->setNoteDurationTrail(noteDisplayCombo->currentIndex() == 1);
 
     m_settings->setValue("General/lang", languageCombo->currentData().toString());
 

@@ -28,6 +28,7 @@
 
 #include "Cfg.h"
 #include "Scroll.h"
+#include "Settings.h"
 
 //#define NOTE_AHEAD_GAP          50
 //#define NOTE_BEHIND_GAP          14
@@ -114,24 +115,68 @@ bool CScroll::insertSlots()
 void CScroll::removeEarlyTimingMakers()
 {
     float delta = deltaAdjustF(m_deltaTail) * m_noteSpacingFactor  + Cfg::playZoneX() - Cfg::scrollStartX() - NOTE_AHEAD_GAP;
-    // only look a few steps (10) into the scroll queue
-    for (int i = 0; i < 10 && i < m_scrollQueue->length(); i++ )
+    // only look a few steps (10) into the scroll queue (after the slots kept only for their trails)
+    for (int i = 0; i < m_trailOnlySlots + 10 && i < m_scrollQueue->length(); i++ )
     {
         if (delta < -(static_cast<float>(m_scrollQueue->index(i).getLeftSideDeltaTime()) * m_noteSpacingFactor))
         {
-            m_scrollQueue->indexPtr(i)->clearAllNoteTimmings();
-            compileSlot(m_scrollQueue->index(i));
+            CSlotDisplayList* slot = m_scrollQueue->indexPtr(i);
+            bool hasTimings = false;
+            for (int j = 0; j < slot->length(); j++)
+            {
+                if (slot->getSymbol(j).getPianistTiming() != NOT_USED)
+                    hasTimings = true;
+            }
+            if (hasTimings) // the slots kept for their trails stay here a while, so only compile them once
+            {
+                slot->clearAllNoteTimmings();
+                compileSlot(*slot);
+            }
         }
         delta += static_cast<float>(m_scrollQueue->index(i).getDeltaTime()) * m_noteSpacingFactor;
     }
+}
+
+bool CScroll::isNoteDurationTrailEnabled()
+{
+    return m_settings->isNoteDurationTrailEnabled();
+}
+
+// the length of the longest note duration trail in this slot
+float CScroll::slotTrailLength(CSlot* slot)
+{
+    float length = 0.0f;
+    for (int i = 0; i < slot->length(); i++)
+    {
+        if (slot->getSymbol(i).getType() == PB_SYMBOL_noteHead)
+            length = qMax(length, noteDurationTrailLength(slot->getSymbol(i).getMidiDuration()));
+    }
+    return length;
+}
+
+// The x position of the left side of a slot.
+// slotStartX is where the slots before it end (the position that its delta time is measured from)
+float CScroll::slotLeftSideX(int index, float slotStartX)
+{
+    return slotStartX + static_cast<float>(m_scrollQueue->index(index).getLeftSideDeltaTime()) * m_noteSpacingFactor;
 }
 
 void CScroll::removeSlots()
 {
     while (m_scrollQueue->length() > 0)
     {
-        if (deltaAdjustF(m_deltaTail) * m_noteSpacingFactor > -Cfg::playZoneX() + Cfg::scrollStartX() + NOTE_AHEAD_GAP -(static_cast<float>(m_scrollQueue->index(0).getLeftSideDeltaTime()) * m_noteSpacingFactor) )
+        float slotStartX = Cfg::playZoneX() + deltaAdjustF(m_deltaTail) * m_noteSpacingFactor;
+        if (slotLeftSideX(0, slotStartX) > Cfg::scrollStartX() + NOTE_AHEAD_GAP)
             break;
+
+        // The note heads have gone, but keep the slot until its trails have also gone past the left edge
+        // (a long note that is still sounding must not disappear)
+        if (isNoteDurationTrailEnabled())
+        {
+            float slotX = slotStartX + static_cast<float>(m_scrollQueue->index(0).getDeltaTime()) * m_noteSpacingFactor;
+            if (slotX + slotTrailLength(m_scrollQueue->indexPtr(0)) > Cfg::scrollStartX())
+                break;
+        }
 
         CSlotDisplayList info = m_scrollQueue->pop();
 
@@ -149,6 +194,19 @@ void CScroll::removeSlots()
             m_wantedDelta = m_deltaTail;
         }
     }
+
+    // count the slots at the front that are only kept for their trails
+    m_trailOnlySlots = 0;
+    if (isNoteDurationTrailEnabled())
+    {
+        float slotStartX = Cfg::playZoneX() + deltaAdjustF(m_deltaTail) * m_noteSpacingFactor;
+        while (m_trailOnlySlots < m_scrollQueue->length() &&
+               slotLeftSideX(m_trailOnlySlots, slotStartX) <= Cfg::scrollStartX() + NOTE_AHEAD_GAP)
+        {
+            slotStartX += static_cast<float>(m_scrollQueue->index(m_trailOnlySlots).getDeltaTime()) * m_noteSpacingFactor;
+            m_trailOnlySlots++;
+        }
+    }
 }
 
 //! Draw all the symbols that we have in the list
@@ -164,6 +222,19 @@ void CScroll::drawScrollingSymbols(bool show)
     if (m_scrollQueue->length() == 0 || m_scrollQueue->indexPtr(0)->m_displayListId == 0)
         return;
 
+    // The trails can go past the ends of the scrolling part of the stave, so cut them off there
+    // (the clef and key signature on the left are not redrawn each time)
+    const bool clip = isNoteDurationTrailEnabled();
+    if (clip)
+    {
+        const GLdouble leftEdge[4]  = { 1.0, 0.0, 0.0, -static_cast<GLdouble>(Cfg::scrollStartX()) };
+        const GLdouble rightEdge[4] = {-1.0, 0.0, 0.0,  static_cast<GLdouble>(Cfg::staveEndX()) };
+        glClipPlane(GL_CLIP_PLANE0, leftEdge);
+        glClipPlane(GL_CLIP_PLANE1, rightEdge);
+        glEnable(GL_CLIP_PLANE0);
+        glEnable(GL_CLIP_PLANE1);
+    }
+
     glPushMatrix();
     glTranslatef (Cfg::playZoneX() + deltaAdjustF(m_deltaTail) * m_noteSpacingFactor, CStavePos::getStaveCenterY(), 0.0f);
 
@@ -174,6 +245,12 @@ void CScroll::drawScrollingSymbols(bool show)
     BENCHMARK(9, "glCallList");
 
     glPopMatrix();
+
+    if (clip)
+    {
+        glDisable(GL_CLIP_PLANE0);
+        glDisable(GL_CLIP_PLANE1);
+    }
 }
 
 void CScroll::scrollDeltaTime(qint64 ticks)
@@ -253,8 +330,21 @@ void CScroll::refresh()
 
 bool CScroll::getKeyboardInfo(int *notes)
 {
+    // Skip the slots that have already gone past the play zone. Nobody changes the colour of
+    // their notes when just listening, so they would still be lit up on the keyboard
+    // (several beats behind the music, as far as the left edge of the score).
+    const float lateEdgeX = Cfg::playZoneX() - static_cast<float>(Cfg::playZoneLate()) * HORIZONTAL_SPACING_FACTOR;
+    float slotX = Cfg::playZoneX() + deltaAdjustF(m_deltaTail) * m_noteSpacingFactor;
+    int firstSlot = 0;
+    while (firstSlot < m_scrollQueue->length())
+    {
+        slotX += static_cast<float>(m_scrollQueue->index(firstSlot).getDeltaTime()) * m_noteSpacingFactor;
+        if (slotX >= lateEdgeX)
+            break;
+        firstSlot++;
+    }
     int stoppedScrollIdx = -1;
-    for(int i=0; i<m_scrollQueue->length(); ++i) {
+    for(int i=firstSlot; i<m_scrollQueue->length(); ++i) {
         CSlotDisplayList &info = *m_scrollQueue->indexPtr(i);
         if(m_show == false || info.m_displayListId == 0) continue;
 
@@ -269,7 +359,7 @@ bool CScroll::getKeyboardInfo(int *notes)
         if(stoppedScrollIdx > -1) break;
     }
     if(stoppedScrollIdx > -1) {
-        for(int i=0; i<stoppedScrollIdx; ++i) {
+        for(int i=firstSlot; i<stoppedScrollIdx; ++i) {
             CSlotDisplayList &info = *m_scrollQueue->indexPtr(i);
             if(m_show == false || info.m_displayListId == 0) continue;
 
@@ -282,7 +372,7 @@ bool CScroll::getKeyboardInfo(int *notes)
     }
 
     int *note = notes;
-    for(int i=0; i<m_scrollQueue->length(); ++i) {
+    for(int i=firstSlot; i<m_scrollQueue->length(); ++i) {
         CSlotDisplayList &info = *m_scrollQueue->indexPtr(i);
         if(m_show == false || info.m_displayListId == 0) continue;
 
@@ -371,6 +461,7 @@ void CScroll::reset()
     int i;
     m_wantedIndex = 0;
     m_wantedDelta = 0;
+    m_trailOnlySlots = 0;
     m_deltaHead = m_deltaTail = 0;
     m_notation->reset();
     m_headSlot.clear();

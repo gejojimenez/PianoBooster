@@ -44,6 +44,7 @@ public:
     {
         m_id = id;
         m_symbolID = 0;
+        m_trailOnlySlots = 0;
 
         m_notation = new CNotation();
         m_scrollQueue = new CQueue<CSlotDisplayList>(QUEUE_LENGTH);
@@ -96,6 +97,9 @@ private:
     void removeSlots();
     void removeEarlyTimingMakers();
     int findWantedChord(int note, CColor color, qint64 wantedDelta);
+    bool isNoteDurationTrailEnabled();
+    static float slotTrailLength(CSlot* slot);
+    float slotLeftSideX(int index, float slotStartX);
 
     int m_id;      // There are lots of these class running but each class has a unique id
     CNotation *m_notation;
@@ -106,6 +110,7 @@ private:
     CSlot m_headSlot;   // The next slot to be put in at the head of the queue;
 
     int m_transpose;
+    int m_trailOnlySlots; // the slots at the front of the scrollQueue whose note heads have gone and only their trails are left
     int m_wantedIndex;  // The index number of the wanted call in the scrollQueue
     qint64 m_wantedDelta; // The running delta time of the wanted chord
 

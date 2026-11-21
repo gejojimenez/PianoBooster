@@ -108,6 +108,9 @@ public:
     static void drColor(CColor color) { glColor3f(color.red, color.green, color.blue);}
     static void forceCompileRedraw(int value = 1) {    m_forceCompileRedraw = value; }
 
+    /// The length on the screen (in pixels) of the trail that shows how long a note sounds
+    static float noteDurationTrailLength(int midiDuration);
+
 protected:
     static whichPart_t m_displayHand;
     static int getCompileRedrawCount() {  return m_forceCompileRedraw; }
@@ -128,6 +131,7 @@ private:
 
     void checkAccidental(CSymbol symbol, float x, float y);
     void drawStaveExtentsion(CSymbol symbol, float x, int noteWidth, bool playable);
+    void drawNoteDurationTrail(CSymbol symbol, float x, float y, CColor color);
     static int m_forceCompileRedraw;
     const static int m_beatMarkerHeight = 10; // The height of the beat markers in the stave positions
 

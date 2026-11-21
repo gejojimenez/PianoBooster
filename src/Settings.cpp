@@ -59,6 +59,7 @@ CSettings::CSettings(QtWindow *mainWindow) : QSettings(CSettings::IniFormat, CSe
     m_tutorPagesEnabled = value("Tutor/TutorPages", true ).toBool();
     CNotation::setCourtesyAccidentals(value("Score/CourtesyAccidentals", false ).toBool());
     m_followThroughErrorsEnabled = value("Score/FollowThroughErrors", false ).toBool();
+    m_noteDurationTrail = value("Score/NoteDurationTrail", false ).toBool();
 
     // load Fluid settings
     setFluidSoundFontNames( value("FluidSynth/SoundFont").toStringList());
@@ -103,6 +104,11 @@ void CSettings::setCourtesyAccidentals(bool value) {
 void CSettings::setFollowThroughErrorsEnabled(bool value) {
     m_followThroughErrorsEnabled = value;
     setValue("Score/FollowThroughErrors", value );
+}
+
+void CSettings::setNoteDurationTrail(bool value) {
+    m_noteDurationTrail = value;
+    setValue("Score/NoteDurationTrail", value );
 }
 
 void CSettings::loadSongSettings()

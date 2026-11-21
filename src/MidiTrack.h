@@ -145,6 +145,8 @@ private:
 
     void decodeSystemMessage( byte_t status, byte_t data1 );
     void noteOffEvent(CMidiEvent &event,  int deltaTime, int channel, int pitch, int velocity);
+    void closeNoteDuration(CMidiEvent* noteOnEventPtr);
+    void closeOpenNotes();
 
     void createNoteEventPtr(int channel)
     {

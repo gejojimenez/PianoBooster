@@ -38,6 +38,37 @@ typedef unsigned char guint8;
 whichPart_t CDraw::m_displayHand;
 int CDraw::m_forceCompileRedraw;
 
+float CDraw::noteDurationTrailLength(int midiDuration)
+{
+    // a safety limit for broken MIDI files: 16 quarter notes (four bars of 4/4)
+    const int maxDuration = 16 * CMidiFile::getPulsesPerQuarterNote();
+
+    if (midiDuration <= 0)
+        return 0.0f;
+    if (midiDuration > maxDuration)
+        midiDuration = maxDuration;
+    // the same scale the score scrolls with (see CScroll::m_noteSpacingFactor)
+    return static_cast<float>(midiDuration) * DEFAULT_PPQN / static_cast<float>(CMidiFile::getPulsesPerQuarterNote())
+           * HORIZONTAL_SPACING_FACTOR;
+}
+
+void CDraw::drawNoteDurationTrail(CSymbol symbol, float x, float y, CColor color)
+{
+    const float halfHeight = 4.0f; // a little narrower than the note head (12 pixels high)
+    const float alpha = 0.4f;      // transparent, so that the stave lines show through
+
+    float length = noteDurationTrailLength(symbol.getMidiDuration());
+    if (length <= 0.0f)
+        return;
+
+    // It starts at the centre of the note head, which is drawn on top of it
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glColor4f(color.red, color.green, color.blue, alpha);
+    glRectf(x, y - halfHeight, x + length, y + halfHeight);
+    glDisable(GL_BLEND);
+}
+
 CDraw::CDraw(CSettings* settings)
 #ifndef NO_USE_FTGL
     :font(nullptr)
@@ -650,6 +681,10 @@ void CDraw::drawSymbol(CSymbol symbol, float x, float y, CSlot* slot)
                 }
             }
 
+            // shows how long the note sounds, drawn first so that the note head is on top
+            if (m_settings->isNoteDurationTrailEnabled())
+                drawNoteDurationTrail(symbol, x, y, color);
+
             drColor(color);
             glBegin(GL_POLYGON);
                 glVertex2f(-7.0f + x,  2.0f + y); // 1
@@ -665,17 +700,6 @@ void CDraw::drawSymbol(CSymbol symbol, float x, float y, CSlot* slot)
                 glVertex2f(-8.0f + x, -3.0f + y); // 11
                 glVertex2f(-8.0f + x, -0.0f + y); // 12
             glEnd();
-
-            /*
-            // shows the MIDI Duration (but not very useful)
-            glLineWidth(4.0f);
-            drColor(CColor(0.3, 0.4, 0.4));
-            glBegin(GL_LINE_STRIP);
-                glVertex2f(x,  y);
-                glVertex2f(x + CMidiFile::ppqnAdjust(symbol.getMidiDuration()) * HORIZONTAL_SPACING_FACTOR, y);
-            glEnd();
-            drColor(color);
-            */
 
             checkAccidental(symbol, x, y);
             break;
