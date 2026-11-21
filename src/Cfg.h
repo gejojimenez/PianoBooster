@@ -108,11 +108,8 @@ public:
     static CColor noteNameColor()       {return CColor(1.0, 1.0, 1.0);}
 
     static void setDefaults() {
-    #ifdef _WIN32
-         tickRate = 12;
-    #else
-          tickRate = 4; // was 12
-    #endif
+        // In msec. It was 12 on Windows, but its timer is now precise there too (Qt::PreciseTimer)
+        tickRate = 4;
     }
 
     static void setStaveEndX(float x)
